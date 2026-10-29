@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-surface font-sans text-body-md text-on-surface antialiased;
+    overscroll-behavior-y: none;
+  }
+  /* Bo'limga o'tganda sarlavha ostida qolib ketmasligi uchun */
+  section[id] {
+    scroll-margin-top: 88px;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-page px-4 md:px-margin-desktop;
+  }
+  .field {
+    @apply h-11 w-full rounded-xl bg-surface-container-low px-3.5 text-body-sm text-on-surface shadow-inner placeholder:text-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary;
+  }
+  .label {
+    @apply font-ui text-label-md font-medium text-on-surface;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary font-ui text-label-lg text-on-primary shadow-lg shadow-primary/20 transition-all hover:bg-primary-container active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .card {
+    @apply rounded-2xl bg-surface-container-lowest shadow-sm;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Material Symbols — ikonka shrift yuklanguncha matn ko'rinib qolmasin */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  overflow: hidden;
+  width: 1em;
+  flex-shrink: 0;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Leaflet xaritasi */
+.leaflet-container {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #f2f3ff;
+}
+.branch-pin {
+  background: transparent !important;
+  border: none !important;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+/* Chat: "yozmoqda..." nuqtalari */
+@keyframes typing {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+.typing-dot {
+  animation: typing 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
