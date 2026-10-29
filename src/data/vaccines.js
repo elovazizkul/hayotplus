@@ -17,7 +17,7 @@ export const vaccines = [
       uz: 'GC Flu / VaxigripTetra mavsumiy toʻrt valentli xalqaro vaksina.',
       ru: 'Сезонная четырёхвалентная вакцина GC Flu / VaxigripTetra.',
     },
-    price: 160000,
+    price: 180000,
     note: { uz: 'Sertifikatlangan', ru: 'Сертифицирована' },
   },
   {
@@ -30,7 +30,7 @@ export const vaccines = [
       uz: 'Jigar karsinomasi va surunkali virusli gepatitdan ishonchli himoya.',
       ru: 'Надёжная защита от хронического вирусного гепатита и карциномы печени.',
     },
-    price: 110000,
+    price: 370000,
     note: { uz: '3 bosqichli', ru: '3 этапа' },
   },
   {
