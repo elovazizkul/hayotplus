@@ -7,6 +7,22 @@ Vercel'da doimiy ishlashga tayyor: GitHub'ga o'zgarish saqlansa, sayt avtomatik 
 
 ---
 
+
+## Serverga o'rnatish (Contabo + Docker)
+
+Sayt, PostgreSQL va Caddy (avtomatik HTTPS) Docker'da ishlaydi. Serverda root sifatida:
+
+```bash
+bash /opt/hayotplus/deploy/deploy.sh
+```
+
+Skript Docker'ni o'rnatadi, kodni yangilaydi, parollarni yaratadi va saytni ishga tushiradi.
+Keyingi yangilashlar ham shu buyruq bilan. Bazaning kunlik nusxasi: `/var/backups/hayotplus`.
+
+- Admin panel: `/admin` (birinchi parol: `/root/hayotplus-admin-password.txt`).
+- API kalit, Telegram token va model: admin panel → AI va Telegram.
+- Claude bilan boshqarish: admin panel → MCP → token yaratish, berilgan buyruqni terminalda bajarish.
+
 ## 1. Vercel'ga joylash (bir marta, ~5 daqiqa)
 
 1. https://vercel.com ga kiring → **Sign up / Log in with GitHub**.

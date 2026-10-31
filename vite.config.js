@@ -38,6 +38,9 @@ function materialIconsSubset() {
 
 export default defineConfig({
   plugins: [react(), materialIconsSubset()],
+  server: {
+    proxy: { '/api': 'http://localhost:3000', '/mcp': 'http://localhost:3000' },
+  },
   build: {
     chunkSizeWarningLimit: 800,
   },

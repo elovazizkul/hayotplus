@@ -19,7 +19,9 @@ function formatDate(v) {
   return m ? `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}` : v;
 }
 
-export default async function handler(req, res) {
+// cfg: { token, chatId, webhook, save } — save(lead) arizani bazaga yozadi va
+// yozuv ID sini qaytaradi; markDelivered(id) Telegram'ga yetganini belgilaydi.
+export async function handleLead(req, res, cfg) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -82,11 +84,19 @@ export default async function handler(req, res) {
   }
   lines.push('', `🌐 Til: ${lead.lang.toUpperCase()}`);
 
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  const webhook = process.env.LEAD_WEBHOOK_URL;
+  const { token, chatId, webhook } = cfg;
+
+  let savedId = null;
+  if (cfg.save) {
+    try {
+      savedId = await cfg.save(lead);
+    } catch (err) {
+      console.error('Lead save failed:', err?.message);
+    }
+  }
 
   if (!(token && chatId) && !webhook) {
+    if (savedId) return res.status(200).json({ ok: true });
     return res.status(503).json({ error: 'Lead delivery is not configured' });
   }
 
@@ -117,7 +127,18 @@ export default async function handler(req, res) {
   const results = await Promise.allSettled(jobs);
   results.filter((r) => r.status === 'rejected').forEach((r) => console.error('Lead delivery failed:', r.reason?.message));
 
-  // Kamida bittasi yetib borgan bo'lsa — muvaffaqiyatli
-  if (results.some((r) => r.status === 'fulfilled')) return res.status(200).json({ ok: true });
+  const delivered = results.some((r) => r.status === 'fulfilled');
+  if (delivered && savedId && cfg.markDelivered) await cfg.markDelivered(savedId).catch(() => {});
+
+  // Bazaga yozilgan yoki kamida bittasiga yetib borgan bo'lsa — muvaffaqiyatli
+  if (delivered || savedId) return res.status(200).json({ ok: true });
   return res.status(502).json({ error: 'Delivery failed' });
+}
+
+export default function handler(req, res) {
+  return handleLead(req, res, {
+    token: process.env.TELEGRAM_BOT_TOKEN,
+    chatId: process.env.TELEGRAM_CHAT_ID,
+    webhook: process.env.LEAD_WEBHOOK_URL,
+  });
 }
