@@ -66,7 +66,8 @@ systemctl enable hayotplus
 systemctl restart hayotplus
 
 echo "==> Nginx"
-SERVER_NAME="${DOMAIN:-_}"
+SERVER_NAME="_"
+if [ -n "$DOMAIN" ]; then SERVER_NAME="$DOMAIN www.$DOMAIN"; fi
 sed "s/__SERVER_NAME__/$SERVER_NAME/" "$APP_DIR/deploy/nginx.conf" > /etc/nginx/sites-available/hayotplus
 ln -sf /etc/nginx/sites-available/hayotplus /etc/nginx/sites-enabled/hayotplus
 rm -f /etc/nginx/sites-enabled/default
@@ -81,7 +82,7 @@ ufw --force enable
 if [ -n "$DOMAIN" ]; then
   echo "==> Bepul HTTPS sertifikat (Let's Encrypt)"
   apt-get install -y certbot python3-certbot-nginx
-  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --redirect
+  certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --redirect
 fi
 
 echo
