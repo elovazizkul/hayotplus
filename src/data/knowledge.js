@@ -39,7 +39,7 @@ QOIDALAR:
 5. Faqat quyidagi ma'lumotlarga tayan. Ro'yxatda yo'q tahlil yoki narx so'ralsa, o'ylab topma — "aniq narxni ${site.phone} raqami orqali bilib olishingiz mumkin" de.
 6. Laboratoriya mavzusiga aloqasi yo'q savollarga muloyimlik bilan javob bermasligingni ayt.
 
-ALOQA: telefon ${site.phone}; Telegram bot @${site.telegramBot}; ish vaqti: ${site.hours.uz}.
+ALOQA: telefon ${[site.phone, site.phone2].filter(Boolean).join(', ')}; Telegram bot @${site.telegramBot}; ish vaqti: ${site.hours.uz}.
 
 FILIALLAR:
 ${branchLines}

@@ -68,8 +68,8 @@ export const ui = {
         tone: 'secondary',
         title: { uz: 'Keng qamrovli tahlillar', ru: 'Широкий спектр анализов' },
         text: {
-          uz: 'Biokimyo, gormonlar, PZR, onkomarkerlar, allergopanellar va 500+ turdagi ixtisoslashgan laboratoriya tekshiruvlari.',
-          ru: 'Биохимия, гормоны, ПЦР, онкомаркеры, аллергопанели и более 500 видов специализированных исследований.',
+          uz: 'Biokimyo, gormonlar, PZR, onkomarkerlar, allergopanellar va 160 dan ortiq turdagi laboratoriya tekshiruvlari.',
+          ru: 'Биохимия, гормоны, ПЦР, онкомаркеры, аллергопанели и более 160 видов лабораторных исследований.',
         },
       },
       {
@@ -132,7 +132,7 @@ export const ui = {
       uz: 'Eslatma: Narxlar oʻzgarishi mumkin. Aniq narx va shoshilinch tekshiruvlar uchun eng yaqin filialga murojaat qiling.',
       ru: 'Примечание: цены могут меняться. Точную стоимость и срочные исследования уточняйте в ближайшем филиале.',
     },
-    pkgEyebrow: { uz: 'Chegirmali toʻplamlar', ru: 'Пакеты со скидкой' },
+    pkgEyebrow: { uz: 'Tayyor toʻplamlar', ru: 'Готовые пакеты' },
     pkgTitle: { uz: 'Check-up kompleks profilaktik paketlar', ru: 'Комплексные check-up пакеты' },
     pkgPrice: { uz: 'Kompleks narxi:', ru: 'Стоимость пакета:' },
     order: { uz: 'Buyurtma berish', ru: 'Заказать' },
