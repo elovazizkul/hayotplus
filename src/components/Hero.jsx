@@ -64,7 +64,7 @@ export default function Hero() {
                     </span>
                   )}
                   <span className="text-body-sm font-semibold text-on-surface">{t(s.title)}</span>
-                  <span className="font-ui text-label-xs text-on-surface-variant">{t(s.sub)}</span>
+                  {s.sub && <span className="font-ui text-label-xs text-on-surface-variant">{t(s.sub)}</span>}
                 </div>
               ))}
             </div>

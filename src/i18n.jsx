@@ -40,7 +40,6 @@ export const ui = {
       },
       {
         title: { uz: 'Tez va aniq natijalar', ru: 'Быстрые и точные результаты' },
-        sub: { uz: 'Kun davomida tayyor', ru: 'Готовность в течение дня' },
         color: 'primary',
       },
     ],
