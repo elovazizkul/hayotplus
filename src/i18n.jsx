@@ -124,6 +124,7 @@ export const ui = {
     colPrice: { uz: 'Narxi (soʻmda)', ru: 'Цена (сум)' },
     colAction: { uz: 'Harakat', ru: 'Действие' },
     day: { uz: 'kun', ru: 'дн.' },
+    more: { uz: 'Yana koʻrsatish (yana {n} ta)', ru: 'Показать ещё (ещё {n})' },
     select: { uz: 'Tanlash', ru: 'Выбрать' },
     selected: { uz: 'Tanlandi', ru: 'Выбрано' },
     empty: { uz: 'Hech narsa topilmadi. Boshqa nom bilan qidirib koʻring yoki bizga qoʻngʻiroq qiling.', ru: 'Ничего не найдено. Попробуйте другое название или позвоните нам.' },

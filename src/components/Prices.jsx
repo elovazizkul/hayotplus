@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon.jsx';
 import SectionHeader from './SectionHeader.jsx';
 import { ui, useLang } from '../i18n.jsx';
 import { categories, tests, packages, formatPrice } from '../data/prices.js';
 import { scrollToId } from '../lib/api.js';
+
+const PAGE_SIZE = 15; // ro'yxat uzun: avval shuncha tahlil ko'rinadi
 
 const norm = (s) =>
   String(s || '')
@@ -22,6 +24,11 @@ export default function Prices({ cart, onToggle, onAdd, onClear }) {
   const { t, lang } = useLang();
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState('all');
+  const [limit, setLimit] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [query, cat]);
 
   const index = useMemo(
     () => tests.map((x) => ({ item: x, hay: norm([x.name.uz, x.name.ru, x.desc.uz, x.desc.ru, x.keywords].join(' ')) })),
@@ -101,7 +108,7 @@ export default function Prices({ cart, onToggle, onAdd, onClear }) {
                 {t(ui.prices.empty)}
               </div>
             )}
-            {visible.map(({ item }) => {
+            {visible.slice(0, limit).map(({ item }) => {
               const selected = inCart(item.id);
               return (
                 <div
@@ -113,19 +120,21 @@ export default function Prices({ cart, onToggle, onAdd, onClear }) {
                   <div className="flex flex-col md:col-span-6">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-title-md font-semibold text-on-surface">{t(item.name)}</span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 font-ui text-label-xs ${
-                          item.accent === 'secondary' ? badgeClass.secondary : badgeClass.primary
-                        }`}
-                      >
-                        {t(item.sample)}
-                      </span>
+                      {t(item.sample) && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 font-ui text-label-xs ${
+                            item.accent === 'secondary' ? badgeClass.secondary : badgeClass.primary
+                          }`}
+                        >
+                          {t(item.sample)}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-body-sm text-on-surface-variant">{t(item.desc)}</span>
+                    {t(item.desc) && <span className="text-body-sm text-on-surface-variant">{t(item.desc)}</span>}
                   </div>
                   <div className="flex items-center justify-between gap-3 md:contents">
                     <div className="flex items-center gap-1.5 text-body-sm text-on-surface-variant md:col-span-2 md:justify-center">
-                      <Icon name="schedule" size={18} className="text-secondary" /> {item.days} {t(ui.prices.day)}
+                      <Icon name="schedule" size={18} className="text-secondary" /> {item.term || item.days} {t(ui.prices.day)}
                     </div>
                     <div className="flex items-center font-ui text-title-md font-bold text-primary md:col-span-2 md:justify-end">
                       {formatPrice(item.price, lang)}
@@ -147,6 +156,15 @@ export default function Prices({ cart, onToggle, onAdd, onClear }) {
               );
             })}
           </div>
+          {visible.length > limit && (
+            <button
+              type="button"
+              onClick={() => setLimit((n) => n + PAGE_SIZE)}
+              className="flex w-full items-center justify-center gap-1.5 border-t border-surface-container px-4 py-3.5 font-ui text-label-md text-primary hover:bg-surface-container-low/40"
+            >
+              <Icon name="expand_more" size={20} /> {t(ui.prices.more, { n: visible.length - limit })}
+            </button>
+          )}
         </div>
 
         <div className="mb-space-xl flex items-start gap-2 font-ui text-label-md text-on-surface-variant">

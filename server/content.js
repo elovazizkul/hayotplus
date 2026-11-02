@@ -47,6 +47,7 @@ export async function refreshContent() {
       sample: i18n(t, 'sample'),
       accent: t.accent || undefined,
       days: t.days,
+      term: t.term,
       price: t.price,
       keywords: t.keywords,
     })),

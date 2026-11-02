@@ -15,7 +15,7 @@ export function buildSystemPrompt(lang = 'uz') {
     .map((b) => `- ${L(b.name)}: ${L(b.address)}${b.landmark ? ` (${L(b.landmark)})` : ''}${b.hours ? `; ish vaqti ${b.hours}` : ''}${b.phone ? `; tel ${b.phone}` : ''}`)
     .join('\n');
   const testLines = tests
-    .map((t) => `- ${L(t.name)} — ${formatPrice(t.price)}, natija ${t.days} kunda. ${L(t.desc)}`)
+    .map((t) => `- ${L(t.name)} — ${formatPrice(t.price)}, natija ${t.term || t.days} kunda. ${L(t.desc)}`)
     .join('\n');
   const pkgLines = packages.map((p) => `- ${L(p.name)} — ${formatPrice(p.price)}: ${L(p.desc)}`).join('\n');
   const vacLines = vaccines
