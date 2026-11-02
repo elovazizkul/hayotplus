@@ -58,9 +58,11 @@ export default function Hero() {
             <div className="grid grid-cols-1 gap-3 pt-space-md sm:grid-cols-3">
               {ui.hero.stats.map((s, i) => (
                 <div key={i} className="flex flex-col gap-1 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-                  <span className={`font-ui text-title-md font-bold ${s.color === 'secondary' ? 'text-secondary' : 'text-primary'}`}>
-                    {t(s.value, { year: site.foundedYear })}
-                  </span>
+                  {s.value && (
+                    <span className={`font-ui text-title-md font-bold ${s.color === 'secondary' ? 'text-secondary' : 'text-primary'}`}>
+                      {t(s.value, { year: site.foundedYear })}
+                    </span>
+                  )}
                   <span className="text-body-sm font-semibold text-on-surface">{t(s.title)}</span>
                   <span className="font-ui text-label-xs text-on-surface-variant">{t(s.sub)}</span>
                 </div>

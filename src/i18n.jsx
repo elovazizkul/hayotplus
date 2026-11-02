@@ -39,7 +39,6 @@ export const ui = {
         color: 'secondary',
       },
       {
-        value: { uz: '2–24 soat', ru: '2–24 часа' },
         title: { uz: 'Tez va aniq natijalar', ru: 'Быстрые и точные результаты' },
         sub: { uz: 'Kun davomida tayyor', ru: 'Готовность в течение дня' },
         color: 'primary',
