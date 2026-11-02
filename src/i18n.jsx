@@ -91,6 +91,11 @@ export const ui = {
     ],
   },
   branches: {
+    mapError: {
+      uz: 'Xarita hozir yuklanmadi. Manzillar roʻyxatidan foydalaning yoki sahifani yangilang.',
+      ru: 'Карта сейчас не загрузилась. Воспользуйтесь списком адресов или обновите страницу.',
+    },
+    mapRetry: { uz: 'Sahifani yangilash', ru: 'Обновить страницу' },
     eyebrow: { uz: 'Filiallar tarmogʻi', ru: 'Сеть филиалов' },
     title: { uz: 'Bizning manzillarimiz', ru: 'Наши адреса' },
     text: {

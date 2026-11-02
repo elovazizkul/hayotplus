@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
+import ErrorBoundary from './ErrorBoundary.jsx';
 import Icon from './Icon.jsx';
 import SectionHeader from './SectionHeader.jsx';
 import { ui, useLang } from '../i18n.jsx';
@@ -10,6 +11,24 @@ const BranchMap = lazy(() => import('./BranchMap.jsx'));
 
 function MapSkeleton() {
   return <div className="h-[520px] animate-pulse rounded-2xl bg-surface-container-lowest shadow-lg" />;
+}
+
+// Xarita yuklanmasa: manzillar ro'yxati ishlayveradi
+function MapUnavailable() {
+  const { t } = useLang();
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface-container-lowest p-8 text-center shadow-lg">
+      <Icon name="map" size={36} className="text-outline" />
+      <p className="text-body-md text-on-surface-variant">{t(ui.branches.mapError)}</p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="rounded-xl bg-surface-container px-4 py-2 font-ui text-label-md text-primary hover:bg-surface-container-high"
+      >
+        {t(ui.branches.mapRetry)}
+      </button>
+    </div>
+  );
 }
 
 export default function Branches() {
@@ -117,9 +136,11 @@ export default function Branches() {
           </ul>
 
           <div className="lg:sticky lg:top-24 lg:col-span-6">
-            <Suspense fallback={<MapSkeleton />}>
-              <BranchMap selected={selected} onSelect={setSelected} />
-            </Suspense>
+            <ErrorBoundary fallback={<MapUnavailable />}>
+              <Suspense fallback={<MapSkeleton />}>
+                <BranchMap selected={selected} onSelect={setSelected} />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </div>
