@@ -327,10 +327,7 @@ export const ui = {
     },
     tooMany: { uz: 'Juda koʻp soʻrov. Bir necha daqiqadan keyin urinib koʻring.', ru: 'Слишком много запросов. Попробуйте через несколько минут.' },
     retry: { uz: 'Qayta urinish', ru: 'Попробовать снова' },
-    abnormalTitle: { uz: 'Meʼyordan chetga chiqqan koʻrsatkichlar', ru: 'Показатели вне нормы' },
     allNormal: { uz: 'Barcha koʻrsatkichlar meʼyorda.', ru: 'Все показатели в пределах нормы.' },
-    high: { uz: 'yuqori', ru: 'выше нормы' },
-    low: { uz: 'past', ru: 'ниже нормы' },
     specialist: { uz: 'Tavsiya: {s} koʻrigidan oʻting', ru: 'Рекомендуем консультацию: {s}' },
     urgent: {
       uz: 'Baʼzi koʻrsatkichlar xavfli darajada. Zudlik bilan shifokorga murojaat qiling yoki 103 ga qoʻngʻiroq qiling.',

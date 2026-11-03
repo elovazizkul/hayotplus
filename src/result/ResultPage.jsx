@@ -183,34 +183,14 @@ function Answer({ a }) {
   return (
     <div className="space-y-4">
       {a.urgency === 'urgent' && <Notice kind="error"><b>{t(r.urgent)}</b></Notice>}
-      {a.summary && <p className="text-body-md text-on-surface">{a.summary}</p>}
-      {a.abnormal.length > 0 ? (
-        <div>
-          <h3 className="mb-2 font-ui text-label-lg font-bold text-on-surface">{t(r.abnormalTitle)}</h3>
-          <ul className="space-y-2">
-            {a.abnormal.map((x, i) => (
-              <li key={i} className="rounded-xl bg-surface-container-low px-4 py-3">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-body-sm font-semibold text-on-surface">{x.name}</span>
-                  <span className="font-ui text-label-md font-bold text-error">
-                    {x.value} · {t(x.flag === 'low' ? r.low : r.high)}
-                  </span>
-                </div>
-                {x.comment && <p className="mt-1 text-body-sm text-on-surface-variant">{x.comment}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <Notice>{t(r.allNormal)}</Notice>
-      )}
+      {/* Qisqa javob: 2–3 gap va qaysi shifokorga borish. Meʼyordan chetdagi qiymatlar pastdagi jadvalda ↑↓ bilan belgilanadi */}
+      <p className="text-body-md text-on-surface">{a.summary || t(r.allNormal)}</p>
       {a.specialty !== 'none' && a.specialty_name && (
-        <p className="flex items-center gap-2 font-ui text-label-lg font-bold text-primary">
+        <p className="flex items-center gap-2 rounded-xl bg-primary-fixed/40 px-4 py-3 font-ui text-label-lg font-bold text-primary">
           <Icon name="stethoscope" size={22} />
           {t(r.specialist, { s: a.specialty_name })}
         </p>
       )}
-      {a.advice && <p className="text-body-md text-on-surface">{a.advice}</p>}
       {a.disclaimer && <p className="text-body-sm italic text-on-surface-variant">{a.disclaimer}</p>}
     </div>
   );

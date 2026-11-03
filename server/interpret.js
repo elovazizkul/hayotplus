@@ -46,6 +46,15 @@ function cleanAnswer(a) {
   };
 }
 
+// Egasi talabi: izoh qisqa bo'lsin — ko'pi bilan 3 gap. AI ko'proq yozsa ham, sahifaga 3 tasi chiqadi.
+// Gap chegarasi: nuqta/!/? dan keyin bo'shliq va bosh harf ("т.е. может" kabi joylar bo'linmaydi).
+const MAX_SENTENCES = 3;
+export function firstSentences(text, n = MAX_SENTENCES) {
+  const parts = String(text ?? '').trim().split(/(?<=[.!?…])\s+(?=["«(]?[A-ZА-ЯЁЎҚҒҲ])/u);
+  return parts.slice(0, n).join(' ');
+}
+const present = (answer) => ({ ...answer, summary: firstSentences(answer.summary) });
+
 export async function askN8n({ url, token, payload, timeoutMs = 90000 }) {
   const r = await fetch(url, {
     method: 'POST',
@@ -104,7 +113,7 @@ router.post('/interpret', rateLimit({ windowMs: 10 * 60000, max: 10 }), wrap(asy
      ORDER BY id DESC LIMIT 1`,
     [ref.id, sex, lang, JSON.stringify(results)],
   );
-  if (cached.rows[0]) return res.json({ answer: cached.rows[0].answer });
+  if (cached.rows[0]) return res.json({ answer: present(cached.rows[0].answer) });
 
   if (!underDailyLimit(Number(cfg['interpret.daily_limit']) || 0)) return res.status(429).json({ error: 'daily_limit' });
 
@@ -123,7 +132,7 @@ router.post('/interpret', rateLimit({ windowMs: 10 * 60000, max: 10 }), wrap(asy
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
     [ref.id, sex, lab.age, lang, r.answer.specialty, r.answer.urgency, JSON.stringify(results), JSON.stringify(r.answer)],
   );
-  res.json({ answer: r.answer });
+  res.json({ answer: present(r.answer) });
 }));
 
 export default router;
