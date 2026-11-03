@@ -7,7 +7,7 @@ import { ui, useLang } from '../i18n.jsx';
 import { site, telHref } from '../data/site.js';
 import { parseResultLink, refFromLocation } from './link.js';
 import QrScanner from './QrScanner.jsx';
-import { decodeImageFile } from './decode.js';
+import { decodeImageFile, getZXing } from './decode.js';
 
 const r = ui.result;
 
@@ -36,6 +36,11 @@ function ScanCard({ onRef }) {
   const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
   const [link, setLink] = useState('');
+
+  // QR o'quvchini oldindan yuklab qo'yamiz — tugma bosilganda darhol ishlasin
+  useEffect(() => {
+    getZXing();
+  }, []);
 
   // 12 soniyada o'qilmasa — surat olishni taklif qilamiz
   useEffect(() => {
@@ -66,7 +71,13 @@ function ScanCard({ onRef }) {
   const accept = (text) => {
     const ref = parseResultLink(text);
     if (!ref) {
-      setError(t(r.badLink));
+      let host = '';
+      try {
+        host = new URL(String(text).trim()).hostname;
+      } catch {
+        /* havola emas */
+      }
+      setError(host && host !== 'hy.todevelop.ru' ? t(r.badLinkHost, { host }) : host ? t(r.badLink) : t(r.notLink));
       return false;
     }
     setScanning(false);

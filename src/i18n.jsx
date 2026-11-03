@@ -260,8 +260,17 @@ export const ui = {
     scan: { uz: 'QR-kodni skanerlash', ru: 'Сканировать QR-код' },
     scanStop: { uz: 'Toʻxtatish', ru: 'Остановить' },
     scanHint: {
-      uz: 'QR-kodni ramkaga joylang va telefonni 15–25 sm masofada tuting. Juda yaqinlashtirmang — rasm xira boʻladi.',
-      ru: 'Поместите QR-код в рамку и держите телефон на расстоянии 15–25 см. Не подносите слишком близко — изображение станет размытым.',
+      uz: 'QR-kodni ramkaga joylang, telefonni 10–20 sm masofada qimirlatmay tuting. Xira boʻlsa — biroz uzoqlashtiring yoki ekranga bosing (fokus).',
+      ru: 'Поместите QR-код в рамку и держите телефон неподвижно в 10–20 см. Если размыто — чуть отодвиньте или коснитесь экрана (фокус).',
+    },
+    switchCamera: { uz: 'Boshqa kamera', ru: 'Другая камера' },
+    badLinkHost: {
+      uz: 'QR-kod oʻqildi, lekin u boshqa saytga olib boradi ({host}). Kvitansiyadagi natijalar QR-kodini skanerlang.',
+      ru: 'QR-код прочитан, но он ведёт на другой сайт ({host}). Отсканируйте QR-код результатов с квитанции.',
+    },
+    notLink: {
+      uz: 'QR-kod oʻqildi, lekin unda havola yoʻq. Kvitansiyadagi natijalar QR-kodini skanerlang.',
+      ru: 'QR-код прочитан, но в нём нет ссылки. Отсканируйте QR-код результатов с квитанции.',
     },
     scanSlow: {
       uz: 'Oʻqiy olmayapsizmi? Pastdagi «QR-kodni suratga olish» tugmasini bosing.',

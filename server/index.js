@@ -136,6 +136,7 @@ app.use(
     index: false,
     setHeaders: (res, path) => {
       if (path.includes('/assets/') || path.includes('\\assets\\')) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      if (path.endsWith('.wasm')) res.setHeader('Content-Type', 'application/wasm'); // QR o'quvchi (ZXing)
     },
   }),
 );

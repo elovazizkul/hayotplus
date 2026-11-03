@@ -1,5 +1,7 @@
-// QR-kodni rasm yoki video kadridan o'qish.
-// Brauzerning o'z o'quvchisi (BarcodeDetector, Android/Chrome) bo'lsa — u, bo'lmasa jsQR (iPhone).
+// QR-kodni rasm yoki video kadridan o'qish. Uchta o'quvchi:
+// - ZXing (zxing-wasm) — asosiy, xira va mayda kodlarni eng yaxshi o'qiydi; fayl saytning o'zidan yuklanadi;
+// - brauzerning o'z o'quvchisi (BarcodeDetector) — Android/Chrome'da qo'shimcha;
+// - jsQR — ZXing yuklanmasa, zaxira.
 
 let detectorPromise;
 export function getDetector() {
@@ -16,8 +18,37 @@ export function getDetector() {
   return detectorPromise;
 }
 
+// (ImageData | Blob) → matn yoki null
+let zxingPromise;
+export function getZXing() {
+  zxingPromise ||= (async () => {
+    try {
+      const [{ prepareZXingModule, readBarcodes }, { default: wasmUrl }] = await Promise.all([
+        import('zxing-wasm/reader'),
+        import('zxing-wasm/reader/zxing_reader.wasm?url'),
+      ]);
+      await prepareZXingModule({
+        overrides: { locateFile: (path, prefix) => (path.endsWith('.wasm') ? wasmUrl : prefix + path) },
+        fireImmediately: true,
+      });
+      return async (input) =>
+        (await readBarcodes(input, { formats: ['QRCode'], tryHarder: true, tryInvert: false, maxNumberOfSymbols: 1 }))[0]?.text || null;
+    } catch (err) {
+      console.error('ZXing yuklanmadi:', err);
+      return null;
+    }
+  })();
+  return zxingPromise;
+}
+
+// ImageData → matn yoki null
 let jsQRPromise;
-export const getJsQR = () => (jsQRPromise ||= import('jsqr').then((m) => m.default));
+export function getJsQR() {
+  jsQRPromise ||= import('jsqr').then(
+    (m) => (img, inversion = 'dontInvert') => m.default(img.data, img.width, img.height, { inversionAttempts: inversion })?.data || null,
+  );
+  return jsQRPromise;
+}
 
 // Markazdagi kvadrat: part — kadrning qisqa tomoniga nisbatan ulushi
 export function centerSquare(w, h, part) {
@@ -25,19 +56,19 @@ export function centerSquare(w, h, part) {
   return [Math.round((w - s) / 2), Math.round((h - s) / 2), s, s];
 }
 
-// Kadrning bir qismini (sx, sy, sw, sh) ko'pi bilan `max` pikselga keltirib jsQR bilan o'qiydi.
-// Kichik qismni qirqib olish — "raqamli yaqinlashtirish": telefonni uzoqroq tutsa ham o'qiydi.
-export function decodeRegion(jsQR, ctx, source, [sx, sy, sw, sh], max, inversion = 'dontInvert') {
+export const newContext = () => document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+
+// Kadrning bir qismini (sx, sy, sw, sh) `max` pikselga keltiradi (upTo — necha martagacha kattalashtirish mumkin).
+// Kichik qismni olish — "raqamli yaqinlashtirish": telefonni uzoqroq tutsa ham o'qiladi.
+export function grab(ctx, source, [sx, sy, sw, sh], max, upTo = 1) {
   const canvas = ctx.canvas;
-  const scale = Math.min(1, max / Math.max(sw, sh));
+  const scale = Math.min(upTo, max / Math.max(sw, sh));
   canvas.width = Math.max(1, Math.round(sw * scale));
   canvas.height = Math.max(1, Math.round(sh * scale));
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  return jsQR(img.data, img.width, img.height, { inversionAttempts: inversion })?.data || null;
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
-
-export const newContext = () => document.createElement('canvas').getContext('2d', { willReadFrequently: true });
 
 async function loadImage(file) {
   if ('createImageBitmap' in window) {
@@ -60,6 +91,16 @@ async function loadImage(file) {
 
 // Telefon kamerasi ilovasida olingan surat: to'liq aniqlik va avtofokus bilan
 export async function decodeImageFile(file) {
+  const zxing = await getZXing();
+  if (zxing) {
+    try {
+      const text = await zxing(file); // ZXing o'zi turli o'lchamlarda qidiradi
+      if (text) return text;
+    } catch {
+      /* boshqa usullar bilan */
+    }
+  }
+
   const image = await loadImage(file);
   const w = image.naturalWidth || image.width;
   const h = image.naturalHeight || image.height;
@@ -70,20 +111,25 @@ export async function decodeImageFile(file) {
       const found = await detector.detect(image);
       if (found[0]?.rawValue) return found[0].rawValue;
     } catch {
-      /* jsQR bilan urinib ko'ramiz */
+      /* davom etamiz */
     }
   }
 
-  const jsQR = await getJsQR();
   const ctx = newContext();
-  const attempts = [
-    [[0, 0, w, h], 1600],
-    [centerSquare(w, h, 0.6), 1200],
-    [centerSquare(w, h, 0.35), 1000],
-    [[0, 0, w, h], 900],
+  const regions = [
+    [centerSquare(w, h, 0.6), 1600],
+    [centerSquare(w, h, 0.3), 1200],
+    [[0, 0, w, h], 2000],
   ];
-  for (const [region, max] of attempts) {
-    const text = decodeRegion(jsQR, ctx, image, region, max, 'attemptBoth');
+  if (zxing) {
+    for (const [region, max] of regions) {
+      const text = await zxing(grab(ctx, image, region, max)).catch(() => null);
+      if (text) return text;
+    }
+  }
+  const jsQR = await getJsQR();
+  for (const [region, max] of regions) {
+    const text = jsQR(grab(ctx, image, region, Math.min(max, 1400)), 'attemptBoth');
     if (text) return text;
   }
   return null;
