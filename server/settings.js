@@ -23,6 +23,11 @@ export const SETTINGS = [
   { key: 'telegram.chat_id', group: 'telegram', label: 'Chat ID', type: 'text', hint: 'Arizalar shu chat yoki guruhga keladi.' },
   { key: 'lead.webhook_url', group: 'telegram', label: 'n8n Webhook manzili (ixtiyoriy)', type: 'secret' },
 
+  { key: 'interpret.enabled', group: 'interpret', label: 'Tahlil natijalarini AI izohlashi (QR) yoqilgan', type: 'bool', default: 'false' },
+  { key: 'interpret.webhook_url', group: 'interpret', label: 'n8n “HPM interpret” Production URL', type: 'secret', hint: 'n8n → HPM interpret (webhook) → Webhook → Production URL' },
+  { key: 'interpret.token', group: 'interpret', label: 'X-HPM-Token paroli', type: 'secret', hint: 'n8n dagi Header Auth paroli bilan bir xil boʻlsin.' },
+  { key: 'interpret.daily_limit', group: 'interpret', label: 'Kunlik izohlar chegarasi', type: 'int', default: '300', hint: 'Oshib ketsa, ertagacha izoh berilmaydi. OpenAI xarajatini nazorat qiladi.' },
+
   { key: 'site.name', group: 'site', label: 'Sayt nomi', type: 'text' },
   { key: 'site.url', group: 'site', label: 'Sayt manzili', type: 'text' },
   { key: 'site.phone', group: 'site', label: 'Asosiy telefon', type: 'text' },

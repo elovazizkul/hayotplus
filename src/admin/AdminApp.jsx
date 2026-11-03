@@ -10,6 +10,7 @@ import McpPage from './McpPage.jsx';
 const NAV = [
   { id: '', label: 'Bosh sahifa', icon: 'dashboard' },
   { id: 'leads', icon: 'inbox' },
+  { id: 'interpretations', icon: 'clinical_notes' },
   { id: 'tests', icon: 'biotech' },
   { id: 'categories', icon: 'category' },
   { id: 'packages', icon: 'inventory_2' },
@@ -18,7 +19,7 @@ const NAV = [
   { id: 'branches', icon: 'location_on' },
   { id: 'faq', icon: 'quiz' },
   { id: 'site', label: 'Sayt sozlamalari', icon: 'tune' },
-  { id: 'integrations', label: 'AI va Telegram', icon: 'smart_toy' },
+  { id: 'integrations', label: 'AI, Telegram, n8n', icon: 'smart_toy' },
   { id: 'mcp', label: 'MCP (Claude)', icon: 'hub' },
   { id: 'audit', icon: 'history' },
   { id: 'security', label: 'Parol', icon: 'lock' },
@@ -206,12 +207,13 @@ export default function AdminApp() {
           {page === 'integrations' && (
             <SettingsPage
               key="integrations"
-              title="AI va Telegram"
+              title="AI, Telegram, n8n"
               subtitle="Kalitlar shifrlangan holda saqlanadi va qayta koʻrsatilmaydi."
-              groups={['ai', 'telegram']}
+              groups={['ai', 'telegram', 'interpret']}
               tests={[
                 { path: '/test/ai', label: 'Claude’ni tekshirish' },
                 { path: '/test/telegram', label: 'Telegramni tekshirish' },
+                { path: '/test/interpret', label: 'n8n izohni tekshirish' },
               ]}
             />
           )}

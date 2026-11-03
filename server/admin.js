@@ -9,6 +9,7 @@ import { resources } from './resources.js';
 import { getConfig, updateSettings, viewSettings } from './settings.js';
 import { randomToken, rateLimit, sha256 } from './security.js';
 import { askClaude } from '../api/chat.js';
+import { askN8n } from './interpret.js';
 
 const ACTOR = 'admin';
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -96,6 +97,28 @@ admin.post('/test/telegram', wrap(async (req, res) => {
     return res.status(400).json({ error: `Telegram rad etdi: ${data?.description || r.status}` });
   }
   res.json({ ok: true });
+}));
+
+// Namuna natijalar bilan (bemor ma'lumotisiz) n8n ni tekshiradi
+admin.post('/test/interpret', wrap(async (req, res) => {
+  const cfg = await getConfig();
+  if (!cfg['interpret.webhook_url'] || !cfg['interpret.token']) return res.status(400).json({ error: 'n8n manzili yoki parol kiritilmagan' });
+  const r = await askN8n({
+    url: cfg['interpret.webhook_url'],
+    token: cfg['interpret.token'],
+    payload: {
+      lang: 'uz',
+      sex: 'f',
+      age: 45,
+      results: [
+        { name: 'Glyukoza', value: '6.8', unit: 'mmol/l', ref: '3.9–6.1' },
+        { name: 'Gemoglobin', value: '128', unit: 'g/l', ref: '120–150' },
+      ],
+    },
+    timeoutMs: 60000,
+  }).catch((err) => ({ error: err.name === 'TimeoutError' ? 'n8n javob bermadi (vaqt tugadi)' : err.message }));
+  if (r.error) return res.status(400).json({ error: `${r.error}. n8n da workflow Active ekanini va parol bir xilligini tekshiring.` });
+  res.json({ ok: true, reply: r.answer.summary, model: 'n8n' });
 }));
 
 // ---- MCP tokenlar ----

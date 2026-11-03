@@ -2,7 +2,7 @@
 //  HAYOT PLUS SERVERI
 // ============================================================
 //  - tayyor saytni beradi (dist/) va bazadagi ma'lumotni unga qo'shadi
-//  - /api/chat, /api/lead — sayt uchun
+//  - /api/chat, /api/lead, /api/results, /api/interpret — sayt uchun
 //  - /api/admin/* — admin panel, /mcp — Claude uchun
 //  Kerakli sozlamalar: DATABASE_URL, APP_SECRET, ADMIN_PASSWORD (.env.example)
 // ============================================================
@@ -18,6 +18,7 @@ import { ApiError } from './repo.js';
 import { rateLimit } from './security.js';
 import admin from './admin.js';
 import mcp from './mcp.js';
+import interpret, { purgeOldInterpretations } from './interpret.js';
 import { handleChat } from '../api/chat.js';
 import { handleLead } from '../api/lead.js';
 
@@ -28,6 +29,11 @@ await migrate();
 await seed();
 await ensureAdmin();
 await refreshContent();
+
+// AI izohlari 90 kundan keyin o'chiriladi
+const purge = () => purgeOldInterpretations().catch((err) => console.error('Purge:', err.message));
+await purge();
+setInterval(purge, 12 * 3600000).unref();
 
 const app = express();
 app.disable('x-powered-by');
@@ -100,6 +106,8 @@ app.post('/api/lead', rateLimit({ windowMs: 60000, max: 10 }), json, async (req,
   }
 });
 
+app.use('/api', json, interpret);
+
 app.use('/api/admin', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
@@ -136,7 +144,7 @@ app.get('*', (req, res) => {
   if (/\.[a-z0-9]+$/i.test(req.path)) return res.status(404).end('Not found');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  if (req.path.startsWith('/admin')) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  if (req.path.startsWith('/admin') || req.path.startsWith('/natija')) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   res.end(renderIndex());
 });
 

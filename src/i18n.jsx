@@ -25,6 +25,7 @@ export const ui = {
       ru: 'Современное оборудование, быстрые результаты и надёжный сервис. 4 филиала в Сырдарьинской области.',
     },
     ctaBranches: { uz: 'Manzillarni koʻrish', ru: 'Смотреть адреса' },
+    ctaResult: { uz: 'Natijani AI bilan tushunish', ru: 'Разбор анализов с AI' },
     stats: [
       {
         value: { uz: '{year}-yildan', ru: 'С {year} года' },
@@ -248,6 +249,70 @@ export const ui = {
       { href: '#ai-yordamchi', label: { uz: 'AI yordamchi', ru: 'AI-помощник' } },
       { href: '#manzillar', label: { uz: 'Filiallar xaritasi', ru: 'Карта филиалов' } },
     ],
+  },
+  result: {
+    back: { uz: 'Bosh sahifa', ru: 'На главную' },
+    title: { uz: 'Tahlil natijalari va AI izohi', ru: 'Результаты анализов и разбор AI' },
+    intro: {
+      uz: 'Kvitansiyadagi QR-kodni skanerlang — natijalaringiz va ularning oddiy tildagi izohi shu yerda chiqadi.',
+      ru: 'Отсканируйте QR-код с квитанции — здесь появятся ваши результаты и их объяснение простым языком.',
+    },
+    scan: { uz: 'QR-kodni skanerlash', ru: 'Сканировать QR-код' },
+    scanStop: { uz: 'Toʻxtatish', ru: 'Остановить' },
+    scanHint: { uz: 'Kamerani kvitansiyadagi QR-kodga qarating', ru: 'Наведите камеру на QR-код на квитанции' },
+    cameraError: {
+      uz: 'Kamerani ochib boʻlmadi. Brauzerga kamera uchun ruxsat bering yoki havolani pastga qoʻying.',
+      ru: 'Не удалось открыть камеру. Разрешите доступ к камере или вставьте ссылку ниже.',
+    },
+    pasteLabel: { uz: 'Yoki QR-koddagi havolani qoʻying', ru: 'Или вставьте ссылку из QR-кода' },
+    pasteButton: { uz: 'Ochish', ru: 'Открыть' },
+    badLink: { uz: 'Bu Hayot Plus natijalari havolasi emas', ru: 'Это не ссылка на результаты Hayot Plus' },
+    loading: { uz: 'Natijalar yuklanmoqda...', ru: 'Загружаем результаты...' },
+    notFound: {
+      uz: 'Natijalar topilmadi. Havola eskirgan boʻlishi mumkin — laboratoriyaga qoʻngʻiroq qiling: {phone}',
+      ru: 'Результаты не найдены. Возможно, ссылка устарела — позвоните в лабораторию: {phone}',
+    },
+    lisError: {
+      uz: 'Laboratoriya dasturi hozir javob bermayapti. Birozdan keyin urinib koʻring.',
+      ru: 'Лабораторная программа сейчас не отвечает. Попробуйте чуть позже.',
+    },
+    blank: { uz: 'Blank №{n}', ru: 'Бланк №{n}' },
+    date: { uz: 'Sana: {d}', ru: 'Дата: {d}' },
+    age: { uz: 'Yoshi: {n}', ru: 'Возраст: {n}' },
+    colName: { uz: 'Koʻrsatkich', ru: 'Показатель' },
+    colValue: { uz: 'Natija', ru: 'Результат' },
+    colRef: { uz: 'Meʼyor', ru: 'Норма' },
+    aiTitle: { uz: 'AI izohi', ru: 'Разбор AI' },
+    sexQuestion: { uz: 'Meʼyorlar jinsga bogʻliq. Jinsingizni tanlang:', ru: 'Нормы зависят от пола. Выберите пол:' },
+    male: { uz: 'Erkak', ru: 'Мужчина' },
+    female: { uz: 'Ayol', ru: 'Женщина' },
+    ask: { uz: 'AI izohini olish', ru: 'Получить разбор AI' },
+    asking: { uz: 'AI natijalarni oʻqimoqda, 10–30 soniya...', ru: 'AI изучает результаты, 10–30 секунд...' },
+    aiOff: {
+      uz: 'AI izohi hozircha ishlamayapti. Savollar boʻlsa, qoʻngʻiroq qiling: {phone}',
+      ru: 'Разбор AI пока недоступен. Если есть вопросы, позвоните: {phone}',
+    },
+    aiError: {
+      uz: 'Izohni olib boʻlmadi. Birozdan keyin qayta urinib koʻring.',
+      ru: 'Не удалось получить разбор. Попробуйте ещё раз чуть позже.',
+    },
+    limit: {
+      uz: 'Bugungi izohlar chegarasi tugadi. Ertaga urinib koʻring yoki qoʻngʻiroq qiling: {phone}',
+      ru: 'Лимит разборов на сегодня исчерпан. Попробуйте завтра или позвоните: {phone}',
+    },
+    tooMany: { uz: 'Juda koʻp soʻrov. Bir necha daqiqadan keyin urinib koʻring.', ru: 'Слишком много запросов. Попробуйте через несколько минут.' },
+    retry: { uz: 'Qayta urinish', ru: 'Попробовать снова' },
+    abnormalTitle: { uz: 'Meʼyordan chetga chiqqan koʻrsatkichlar', ru: 'Показатели вне нормы' },
+    allNormal: { uz: 'Barcha koʻrsatkichlar meʼyorda.', ru: 'Все показатели в пределах нормы.' },
+    high: { uz: 'yuqori', ru: 'выше нормы' },
+    low: { uz: 'past', ru: 'ниже нормы' },
+    specialist: { uz: 'Tavsiya: {s} koʻrigidan oʻting', ru: 'Рекомендуем консультацию: {s}' },
+    urgent: {
+      uz: 'Baʼzi koʻrsatkichlar xavfli darajada. Zudlik bilan shifokorga murojaat qiling yoki 103 ga qoʻngʻiroq qiling.',
+      ru: 'Некоторые показатели на опасном уровне. Срочно обратитесь к врачу или позвоните 103.',
+    },
+    questions: { uz: 'Savollar boʻlsa, laboratoriyaga qoʻngʻiroq qiling:', ru: 'Есть вопросы — позвоните в лабораторию:' },
+    another: { uz: 'Boshqa natijani ochish', ru: 'Открыть другой результат' },
   },
 };
 

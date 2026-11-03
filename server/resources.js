@@ -217,6 +217,51 @@ export const resources = {
     ],
   },
 
+  interpretations: {
+    label: 'AI izohlar (QR)',
+    ops: ['list', 'get', 'delete'],
+    numericId: true,
+    private: true, // tahlil natijalari — tibbiy ma'lumot
+    sort: 'created_at',
+    dir: 'desc',
+    search: ['lis_id', 'specialty'],
+    fields: [
+      { name: 'id', label: '№', type: 'int', readOnly: true, list: true },
+      { name: 'created_at', label: 'Sana', type: 'datetime', readOnly: true, list: true, filter: true },
+      { name: 'lis_id', label: 'Blank raqami', type: 'text', readOnly: true, list: true },
+      {
+        name: 'sex',
+        label: 'Jinsi',
+        type: 'select',
+        readOnly: true,
+        list: true,
+        filter: true,
+        options: [
+          { value: 'm', label: 'Erkak' },
+          { value: 'f', label: 'Ayol' },
+        ],
+      },
+      { name: 'age', label: 'Yoshi', type: 'int', readOnly: true, list: true },
+      { name: 'specialty', label: 'Mutaxassis (kod)', type: 'text', readOnly: true, list: true, filter: true },
+      {
+        name: 'urgency',
+        label: 'Shoshilinchlik',
+        type: 'select',
+        readOnly: true,
+        list: true,
+        filter: true,
+        options: [
+          { value: 'routine', label: 'Oddiy' },
+          { value: 'soon', label: 'Tezroq' },
+          { value: 'urgent', label: 'Shoshilinch' },
+        ],
+      },
+      { name: 'lang', label: 'Til', type: 'text', readOnly: true },
+      { name: 'results', label: 'Natijalar', type: 'json', readOnly: true },
+      { name: 'answer', label: 'AI javobi', type: 'json', readOnly: true },
+    ],
+  },
+
   audit: {
     label: 'Oʻzgarishlar tarixi',
     table: 'audit_log',

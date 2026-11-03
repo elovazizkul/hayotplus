@@ -53,6 +53,13 @@ export default function Hero() {
                 <Icon name="vaccines" />
                 <span>{t(ui.nav.vaccination)}</span>
               </a>
+              <a
+                href="/natija"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-primary/30 bg-surface-container-lowest px-6 py-3 font-ui text-label-lg text-primary shadow-sm transition-all hover:scale-[1.02] hover:border-primary active:scale-[0.98]"
+              >
+                <Icon name="qr_code_scanner" />
+                <span>{t(ui.hero.ctaResult)}</span>
+              </a>
             </div>
 
             <div className="grid grid-cols-1 gap-3 pt-space-md sm:grid-cols-3">

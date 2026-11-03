@@ -24,7 +24,9 @@ window.addEventListener('vite:preloadError', (event) => {
 });
 
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'));
+const ResultPage = lazy(() => import('./result/ResultPage.jsx'));
 const isAdmin = /^\/admin(\/|$)/.test(window.location.pathname);
+const isResult = /^\/natija\/?$/.test(window.location.pathname);
 
 function CrashScreen() {
   return (
@@ -49,7 +51,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </Suspense>
       ) : (
         <LangProvider>
-          <App />
+          {isResult ? (
+            <Suspense fallback={null}>
+              <ResultPage />
+            </Suspense>
+          ) : (
+            <App />
+          )}
         </LangProvider>
       )}
     </ErrorBoundary>
