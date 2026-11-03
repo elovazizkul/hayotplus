@@ -3,7 +3,9 @@ import Icon from '../components/Icon.jsx';
 import { ui, useLang } from '../i18n.jsx';
 import { centerSquare, getDetector, getJsQR, getZXing, grab, newContext } from './decode.js';
 
-const RESOLUTION = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+// Kvitansiyadagi QR juda zich (49×49 katak): qancha ko'p piksel, shuncha uzoqdan o'qiladi.
+// Telefon qo'llasa — 4K, bo'lmasa brauzer eng yaqin sifatni beradi.
+const RESOLUTION = { width: { ideal: 3840 }, height: { ideal: 2160 } };
 
 // Kamera sozlamalari bitta chaqiruvda beriladi: applyConstraints avvalgilarini almashtiradi,
 // aniqlik ko'rsatilmasa, brauzer kamerani past sifatga (640×480) qaytarishi mumkin.
@@ -85,13 +87,15 @@ export default function QrScanner({ onResult, onError }) {
         return;
       }
 
-      // Navbat bilan: brauzer o'quvchisi (butun kadr), markaz, butun kadr, markazning kichik qismi
+      // Navbat bilan: brauzer o'quvchisi (butun kadr), markaz to'liq aniqlikda,
+      // markazning kichik qismi kattalashtirib, butun kadr
       const steps = [];
       if (detector) steps.push(async () => (await detector.detect(video))[0]?.rawValue);
       if (decode) {
-        steps.push((w, h) => decode(grab(ctx, video, centerSquare(w, h, 0.65), 1000)));
-        steps.push((w, h) => decode(grab(ctx, video, [0, 0, w, h], 1280)));
-        steps.push((w, h) => decode(grab(ctx, video, centerSquare(w, h, 0.35), 760, 2)));
+        steps.push((w, h) => decode(grab(ctx, video, centerSquare(w, h, 0.65), 1600)));
+        steps.push((w, h) => decode(grab(ctx, video, centerSquare(w, h, 0.35), 1100, 2)));
+        if (detector) steps.push(async () => (await detector.detect(video))[0]?.rawValue);
+        steps.push((w, h) => decode(grab(ctx, video, [0, 0, w, h], 1600)));
       }
       const decoderName = [detector && 'native', zxing ? 'ZXing' : jsQR && 'jsQR'].filter(Boolean).join('+');
 
@@ -197,8 +201,8 @@ export default function QrScanner({ onResult, onError }) {
       </div>
       {status.w && (
         <p className="text-center font-ui text-label-xs text-on-surface-variant">
-          {status.w}×{status.h} · {status.decoder}
-          {debug && ` · ${status.frames} · ${status.ms} ms · ${status.label} · zoom ${zoom ? `${zoom.min}–${zoom.max}` : '—'}`}
+          {t(ui.result.searching)} · {status.w}×{status.h} · {status.decoder} · {status.frames}
+          {debug && ` · ${status.ms} ms · ${status.label} · zoom ${zoom ? `${zoom.min}–${zoom.max}` : '—'}`}
         </p>
       )}
     </div>

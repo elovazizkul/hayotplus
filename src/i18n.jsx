@@ -264,6 +264,7 @@ export const ui = {
       ru: 'Поместите QR-код в рамку и держите телефон неподвижно в 10–20 см. Если размыто — чуть отодвиньте или коснитесь экрана (фокус).',
     },
     switchCamera: { uz: 'Boshqa kamera', ru: 'Другая камера' },
+    searching: { uz: 'QR qidirilmoqda', ru: 'Ищем QR' },
     badLinkHost: {
       uz: 'QR-kod oʻqildi, lekin u boshqa saytga olib boradi ({host}). Kvitansiyadagi natijalar QR-kodini skanerlang.',
       ru: 'QR-код прочитан, но он ведёт на другой сайт ({host}). Отсканируйте QR-код результатов с квитанции.',

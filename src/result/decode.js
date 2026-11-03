@@ -32,7 +32,7 @@ export function getZXing() {
         fireImmediately: true,
       });
       return async (input) =>
-        (await readBarcodes(input, { formats: ['QRCode'], tryHarder: true, tryInvert: false, maxNumberOfSymbols: 1 }))[0]?.text || null;
+        (await readBarcodes(input, { formats: ['QRCode'], tryHarder: true, tryInvert: true, maxNumberOfSymbols: 1 }))[0]?.text || null;
     } catch (err) {
       console.error('ZXing yuklanmadi:', err);
       return null;

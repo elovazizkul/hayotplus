@@ -42,10 +42,10 @@ function ScanCard({ onRef }) {
     getZXing();
   }, []);
 
-  // 12 soniyada o'qilmasa — surat olishni taklif qilamiz
+  // 8 soniyada o'qilmasa — surat olishni taklif qilamiz
   useEffect(() => {
     if (!scanning) return setSlow(false);
-    const id = setTimeout(() => setSlow(true), 12000);
+    const id = setTimeout(() => setSlow(true), 8000);
     return () => clearTimeout(id);
   }, [scanning]);
 
@@ -77,7 +77,9 @@ function ScanCard({ onRef }) {
       } catch {
         /* havola emas */
       }
-      setError(host && host !== 'hy.todevelop.ru' ? t(r.badLinkHost, { host }) : host ? t(r.badLink) : t(r.notLink));
+      const msg = host && host !== 'hy.todevelop.ru' ? t(r.badLinkHost, { host }) : host ? t(r.badLink) : t(r.notLink);
+      const shown = String(text).trim();
+      setError(`${msg} (${shown.length > 70 ? `${shown.slice(0, 70)}…` : shown})`); // nima o'qilganini ko'rsatamiz
       return false;
     }
     setScanning(false);
@@ -91,6 +93,8 @@ function ScanCard({ onRef }) {
       {scanning ? (
         <>
           <QrScanner onResult={accept} onError={() => { setScanning(false); setError(t(r.cameraError)); }} />
+          {/* Xabar kamera ostida: skanerlayotgan odam uni darhol ko'rsin */}
+          {error && <Notice kind="error">{error}</Notice>}
           <p className="text-center font-ui text-label-md text-on-surface-variant">{t(r.scanHint)}</p>
           {slow && <Notice>{t(r.scanSlow)}</Notice>}
           <button type="button" onClick={() => setScanning(false)} className="w-full rounded-xl bg-surface-container px-5 py-3 font-ui text-label-lg text-on-surface">
@@ -112,7 +116,7 @@ function ScanCard({ onRef }) {
         {reading ? t(r.photoReading) : t(r.photo)}
         <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={onPhoto} disabled={reading} />
       </label>
-      {error && <Notice kind="error">{error}</Notice>}
+      {error && !scanning && <Notice kind="error">{error}</Notice>}
       <form
         onSubmit={(e) => { e.preventDefault(); setError(''); accept(link); }}
         className="space-y-2 border-t border-surface-container pt-4"

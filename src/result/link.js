@@ -9,14 +9,18 @@ export function checkRef(id, key) {
 }
 
 export function parseResultLink(text) {
+  // QR ichida "&amp;", bo'shliq yoki "https://"siz manzil bo'lishi mumkin
+  let s = String(text).trim().replace(/&amp;/gi, '&').replace(/\s+/g, '');
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
   let u;
   try {
-    u = new URL(String(text).trim());
+    u = new URL(s);
   } catch {
     return null;
   }
-  const lis = u.hostname === LIS_HOST && u.pathname === '/q/r/result';
-  const own = (u.hostname === window.location.hostname || /(^|\.)hayotplus\.uz$/.test(u.hostname)) && u.pathname.replace(/\/$/, '') === '/natija';
+  const path = u.pathname.replace(/\/$/, '');
+  const lis = u.hostname === LIS_HOST && path === '/q/r/result';
+  const own = (u.hostname === window.location.hostname || /(^|\.)hayotplus\.uz$/.test(u.hostname)) && path === '/natija';
   return lis || own ? checkRef(u.searchParams.get('id'), u.searchParams.get('tmpK')) : null;
 }
 
