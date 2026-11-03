@@ -178,6 +178,17 @@ function ResultsList({ lab, abnormal }) {
   );
 }
 
+// Egasi talabi: AI javobi ekanini, xato qilishi mumkinligini va tashxis emasligini doim ko'rsatamiz
+function AiWarning() {
+  const { t } = useLang();
+  return (
+    <p className="flex items-start gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-body-sm text-on-surface-variant">
+      <Icon name="info" size={20} className="mt-0.5 shrink-0 text-primary" />
+      <span>{t(r.aiWarning)}</span>
+    </p>
+  );
+}
+
 function Answer({ a }) {
   const { t } = useLang();
   return (
@@ -191,7 +202,7 @@ function Answer({ a }) {
           {t(r.specialist, { s: a.specialty_name })}
         </p>
       )}
-      {a.disclaimer && <p className="text-body-sm italic text-on-surface-variant">{a.disclaimer}</p>}
+      <AiWarning />
     </div>
   );
 }
@@ -254,6 +265,7 @@ function AiBlock({ refData, enabled, onAnswer }) {
             <Icon name="auto_awesome" />
             {state.status === 'asking' ? t(r.asking) : t(r.ask)}
           </button>
+          <AiWarning />
           {state.status === 'error' && <Notice kind="error">{t(state.msg, { phone: site.phone })}</Notice>}
         </>
       )}

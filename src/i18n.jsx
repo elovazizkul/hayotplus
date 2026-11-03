@@ -328,6 +328,10 @@ export const ui = {
     tooMany: { uz: 'Juda koʻp soʻrov. Bir necha daqiqadan keyin urinib koʻring.', ru: 'Слишком много запросов. Попробуйте через несколько минут.' },
     retry: { uz: 'Qayta urinish', ru: 'Попробовать снова' },
     allNormal: { uz: 'Barcha koʻrsatkichlar meʼyorda.', ru: 'Все показатели в пределах нормы.' },
+    aiWarning: {
+      uz: 'Izohni sunʼiy intellekt (AI) beradi va u xato qilishi mumkin. AI tashxis qoʻymaydi: bu yakuniy xulosa emas, maʼlumot faqat tanishish uchun beriladi. Yakuniy xulosani shifokor chiqaradi.',
+      ru: 'Разбор даёт искусственный интеллект (ИИ), и он может ошибаться. ИИ не ставит диагнозы: это не окончательный диагноз, информация дана в ознакомительных целях. Окончательное заключение делает врач.',
+    },
     specialist: { uz: 'Tavsiya: {s} koʻrigidan oʻting', ru: 'Рекомендуем консультацию: {s}' },
     urgent: {
       uz: 'Baʼzi koʻrsatkichlar xavfli darajada. Zudlik bilan shifokorga murojaat qiling yoki 103 ga qoʻngʻiroq qiling.',
