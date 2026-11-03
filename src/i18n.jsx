@@ -259,7 +259,22 @@ export const ui = {
     },
     scan: { uz: 'QR-kodni skanerlash', ru: 'Сканировать QR-код' },
     scanStop: { uz: 'Toʻxtatish', ru: 'Остановить' },
-    scanHint: { uz: 'Kamerani kvitansiyadagi QR-kodga qarating', ru: 'Наведите камеру на QR-код на квитанции' },
+    scanHint: {
+      uz: 'QR-kodni ramkaga joylang va telefonni 15–25 sm masofada tuting. Juda yaqinlashtirmang — rasm xira boʻladi.',
+      ru: 'Поместите QR-код в рамку и держите телефон на расстоянии 15–25 см. Не подносите слишком близко — изображение станет размытым.',
+    },
+    scanSlow: {
+      uz: 'Oʻqiy olmayapsizmi? Pastdagi «QR-kodni suratga olish» tugmasini bosing.',
+      ru: 'Не получается? Нажмите «Сфотографировать QR-код» ниже.',
+    },
+    zoom: { uz: 'Yaqinlashtirish', ru: 'Увеличение' },
+    torch: { uz: 'Chiroq', ru: 'Фонарик' },
+    photo: { uz: 'QR-kodni suratga olish', ru: 'Сфотографировать QR-код' },
+    photoReading: { uz: 'Surat oʻqilmoqda...', ru: 'Читаем фото...' },
+    photoNotFound: {
+      uz: 'Suratda QR-kod topilmadi. Kvitansiyani yorugʻ joyda, QR-kod butun koʻrinadigan qilib qayta suratga oling.',
+      ru: 'На фото не найден QR-код. Сфотографируйте квитанцию при хорошем свете так, чтобы QR-код был виден целиком.',
+    },
     cameraError: {
       uz: 'Kamerani ochib boʻlmadi. Brauzerga kamera uchun ruxsat bering yoki havolani pastga qoʻying.',
       ru: 'Не удалось открыть камеру. Разрешите доступ к камере или вставьте ссылку ниже.',

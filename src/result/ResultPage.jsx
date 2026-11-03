@@ -7,6 +7,7 @@ import { ui, useLang } from '../i18n.jsx';
 import { site, telHref } from '../data/site.js';
 import { parseResultLink, refFromLocation } from './link.js';
 import QrScanner from './QrScanner.jsx';
+import { decodeImageFile } from './decode.js';
 
 const r = ui.result;
 
@@ -31,8 +32,36 @@ function Notice({ kind = 'info', children }) {
 function ScanCard({ onRef }) {
   const { t } = useLang();
   const [scanning, setScanning] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
   const [link, setLink] = useState('');
+
+  // 12 soniyada o'qilmasa — surat olishni taklif qilamiz
+  useEffect(() => {
+    if (!scanning) return setSlow(false);
+    const id = setTimeout(() => setSlow(true), 12000);
+    return () => clearTimeout(id);
+  }, [scanning]);
+
+  // Telefonning kamera ilovasi: to'liq aniqlik va avtofokus, iPhone'da ham ishonchli
+  const onPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setScanning(false);
+    setError('');
+    setReading(true);
+    try {
+      const text = await decodeImageFile(file);
+      if (!text) setError(t(r.photoNotFound));
+      else accept(text);
+    } catch {
+      setError(t(r.photoNotFound));
+    } finally {
+      setReading(false);
+    }
+  };
 
   const accept = (text) => {
     const ref = parseResultLink(text);
@@ -52,6 +81,7 @@ function ScanCard({ onRef }) {
         <>
           <QrScanner onResult={accept} onError={() => { setScanning(false); setError(t(r.cameraError)); }} />
           <p className="text-center font-ui text-label-md text-on-surface-variant">{t(r.scanHint)}</p>
+          {slow && <Notice>{t(r.scanSlow)}</Notice>}
           <button type="button" onClick={() => setScanning(false)} className="w-full rounded-xl bg-surface-container px-5 py-3 font-ui text-label-lg text-on-surface">
             {t(r.scanStop)}
           </button>
@@ -66,6 +96,11 @@ function ScanCard({ onRef }) {
           {t(r.scan)}
         </button>
       )}
+      <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-primary/30 bg-surface-container-lowest px-6 py-3.5 font-ui text-label-lg text-primary hover:border-primary">
+        <Icon name="photo_camera" />
+        {reading ? t(r.photoReading) : t(r.photo)}
+        <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={onPhoto} disabled={reading} />
+      </label>
       {error && <Notice kind="error">{error}</Notice>}
       <form
         onSubmit={(e) => { e.preventDefault(); setError(''); accept(link); }}
