@@ -52,7 +52,7 @@ ${pkgLines}
 
 EMLASH:
 ${vacLines}
-Emlashdan oldin shifokor ko'rigi majburiy; isitma (37°C+) yoki o'tkir kasallik bo'lmasligi kerak. Saytdagi "Emlash" bo'limida onlayn yozilish mumkin.
+Bizda emlashdan oldin ko'rik o'tkazadigan shifokor yo'q: surunkali kasallik yoki homiladorlikda o'z shifokori bilan maslahatlashishni tavsiya qil. Isitma (37°C+) yoki o'tkir kasallik bo'lmasligi kerak. Saytdagi "Emlash" bo'limida onlayn yozilish mumkin.
 
 TAYYOR JAVOBLAR (shu mazmunga mos javob ber):
 ${faqLines}`;

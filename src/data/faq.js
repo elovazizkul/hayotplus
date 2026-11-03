@@ -71,8 +71,8 @@ export const faq = [
     question: { uz: 'Emlash haqida maʼlumot', ru: 'Информация о прививках' },
     keywords: ['emla', 'vaksina', 'privivka', 'прививк', 'вакцин'],
     answer: {
-      uz: 'Bizda gripp, Gepatit B, ADS-M va boshqa vaksinalar mavjud. Emlashdan oldin shifokor koʻrigi oʻtkaziladi. Saytdagi “Emlash” boʻlimida onlayn yozilishingiz mumkin.',
-      ru: 'У нас есть вакцины от гриппа, гепатита B, АДС-М и другие. Перед прививкой проводится осмотр врача. Записаться можно онлайн в разделе «Вакцинация».',
+      uz: 'Bizda gripp, Gepatit B, ADS-M va boshqa vaksinalar mavjud. Saytdagi “Emlash” boʻlimida onlayn yozilishingiz mumkin.',
+      ru: 'У нас есть вакцины от гриппа, гепатита B, АДС-М и другие. Записаться можно онлайн в разделе «Вакцинация».',
     },
   },
   {

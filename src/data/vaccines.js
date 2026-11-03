@@ -64,10 +64,10 @@ export const vaccines = [
 
 export const vaccineRules = [
   {
-    title: { uz: 'Majburiy shifokor koʻrigi', ru: 'Обязательный осмотр врача' },
+    title: { uz: 'Shifokor bilan maslahat', ru: 'Консультация с врачом' },
     text: {
-      uz: 'Emlashdan avval filialimizning pediatr yoki terapevt shifokori tomonidan toʻliq tekshiruv oʻtkaziladi.',
-      ru: 'Перед прививкой педиатр или терапевт нашего филиала проводит полный осмотр.',
+      uz: 'Surunkali kasallik, homiladorlik yoki immunitet pasaygan boʻlsa, emlashdan oldin davolovchi shifokoringiz bilan maslahatlashing.',
+      ru: 'При хронических заболеваниях, беременности или ослабленном иммунитете перед прививкой посоветуйтесь со своим лечащим врачом.',
     },
   },
   {
@@ -80,8 +80,8 @@ export const vaccineRules = [
   {
     title: { uz: 'Allergiya tarixi', ru: 'Аллергоанамнез' },
     text: {
-      uz: 'Dori vositalari, tovuq oqsili yoki avvalgi vaksinalarga reaksiyalar haqida shifokorga xabar bering.',
-      ru: 'Сообщите врачу о реакциях на лекарства, куриный белок или предыдущие прививки.',
+      uz: 'Dori vositalari, tovuq tuxumi oqsili yoki avvalgi vaksinalarga reaksiya boʻlgan boʻlsa, emlashdan oldin xodimimizga aytib qoʻying.',
+      ru: 'Если были реакции на лекарства, куриный белок или предыдущие прививки, сообщите об этом нашему сотруднику перед прививкой.',
     },
   },
 ];
