@@ -10,6 +10,7 @@ import { getConfig, updateSettings, viewSettings } from './settings.js';
 import { randomToken, rateLimit, sha256 } from './security.js';
 import { askClaude } from '../api/chat.js';
 import { askN8n } from './interpret.js';
+import { siteStats } from './stats.js';
 
 const ACTOR = 'admin';
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -43,13 +44,19 @@ admin.get('/meta', (req, res) => {
 
 admin.get('/stats', wrap(async (req, res) => {
   const cfg = await getConfig();
+  const { totals } = await siteStats(1);
+  const today = (...metrics) => metrics.reduce((s, m) => s + (totals[m]?.today || 0), 0);
   res.json({
     ...(await repo.stats()),
+    visitorsToday: today('uniq:site'),
+    aiToday: today('ai:new', 'ai:cached'),
     aiReady: Boolean(cfg['ai.api_key']) && cfg['ai.enabled'] === 'true',
     telegramReady: Boolean(cfg['telegram.bot_token'] && cfg['telegram.chat_id']),
     recent: (await repo.list('audit', { pageSize: 8 })).items,
   });
 }));
+
+admin.get('/site-stats', wrap(async (req, res) => res.json(await siteStats(req.query.days))));
 
 // ---- Yozuvlar ----
 admin.get('/r/:resource', wrap(async (req, res) => {

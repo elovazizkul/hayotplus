@@ -6,9 +6,11 @@ import { Alert, Badge, Button, Field, inputClass, PageTitle } from './ui.jsx';
 import ResourcePage from './ResourcePage.jsx';
 import SettingsPage from './SettingsPage.jsx';
 import McpPage from './McpPage.jsx';
+import StatsPage from './StatsPage.jsx';
 
 const NAV = [
   { id: '', label: 'Bosh sahifa', icon: 'dashboard' },
+  { id: 'stats', label: 'Statistika', icon: 'monitoring' },
   { id: 'leads', icon: 'inbox' },
   { id: 'interpretations', icon: 'clinical_notes' },
   { id: 'tests', icon: 'biotech' },
@@ -70,6 +72,8 @@ function Dashboard({ go }) {
   }, []);
   if (!s) return <Alert>{error}</Alert>;
   const cards = [
+    { label: 'Bugun tashrif buyuruvchilar', value: s.visitorsToday, page: 'stats' },
+    { label: 'Bugun AI izohlar', value: s.aiToday, page: 'stats' },
     { label: 'Yangi arizalar', value: s.newLeads, page: 'leads' },
     { label: 'Bugungi arizalar', value: s.todayLeads, page: 'leads' },
     { label: 'Tahlillar', value: s.tests, page: 'tests' },
@@ -84,7 +88,7 @@ function Dashboard({ go }) {
         <button type="button" onClick={() => go('integrations')}><Badge on={s.aiReady}>AI yordamchi: {s.aiReady ? 'ulangan' : 'ulanmagan'}</Badge></button>
         <button type="button" onClick={() => go('integrations')}><Badge on={s.telegramReady}>Telegram: {s.telegramReady ? 'ulangan' : 'ulanmagan'}</Badge></button>
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {cards.map((c) => (
           <button key={c.label} type="button" onClick={() => go(c.page)} className="rounded-xl border border-outline-variant bg-white p-4 text-left hover:border-primary">
             <div className="text-2xl font-bold text-on-surface">{c.value}</div>
@@ -218,6 +222,7 @@ export default function AdminApp() {
             />
           )}
           {page === 'mcp' && <McpPage />}
+          {page === 'stats' && <StatsPage />}
           {page === 'security' && <PasswordPage onChanged={() => setAuthed(false)} />}
         </main>
       </div>

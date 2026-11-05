@@ -19,6 +19,7 @@ import { rateLimit } from './security.js';
 import admin from './admin.js';
 import mcp from './mcp.js';
 import interpret, { purgeOldInterpretations } from './interpret.js';
+import { purgeVisitMarks, trackVisit } from './stats.js';
 import { handleChat } from '../api/chat.js';
 import { handleLead } from '../api/lead.js';
 
@@ -30,8 +31,9 @@ await seed();
 await ensureAdmin();
 await refreshContent();
 
-// AI izohlari 90 kundan keyin o'chiriladi
-const purge = () => purgeOldInterpretations().catch((err) => console.error('Purge:', err.message));
+// AI izohlari 90 kundan, tashrif izlari 2 kundan keyin o'chiriladi
+const purge = () =>
+  Promise.all([purgeOldInterpretations(), purgeVisitMarks()]).catch((err) => console.error('Purge:', err.message));
 await purge();
 setInterval(purge, 12 * 3600000).unref();
 
@@ -146,6 +148,8 @@ app.get('*', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   if (req.path.startsWith('/admin') || req.path.startsWith('/natija')) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  if (req.path === '/') trackVisit(req, 'home');
+  else if (/^\/natija\/?$/.test(req.path)) trackVisit(req, 'natija');
   res.end(renderIndex());
 });
 

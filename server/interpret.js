@@ -7,6 +7,7 @@ import { query } from './db.js';
 import { getConfig } from './settings.js';
 import { rateLimit } from './security.js';
 import { checkRef, fetchResults } from './lis.js';
+import { track } from './stats.js';
 
 const SPECIALTIES = ['endo', 'cardio', 'neph', 'gastro', 'gyn', 'uro', 'hema', 'gp', 'rheum', 'neuro', 'infect', 'ped', 'none'];
 const URGENCY = ['routine', 'soon', 'urgent'];
@@ -82,7 +83,11 @@ router.post('/results', rateLimit({ windowMs: 60000, max: 20 }), wrap(async (req
     return undefined;
   });
   if (lab === undefined) return res.status(502).json({ error: 'lis_unavailable' });
-  if (!lab) return res.status(404).json({ error: 'not_found' });
+  if (!lab) {
+    track('results:notfound');
+    return res.status(404).json({ error: 'not_found' });
+  }
+  track('results:ok');
   const cfg = await getConfig();
   const interpretEnabled = cfg['interpret.enabled'] === 'true' && Boolean(cfg['interpret.webhook_url'] && cfg['interpret.token']);
   res.setHeader('Cache-Control', 'no-store');
@@ -113,9 +118,15 @@ router.post('/interpret', rateLimit({ windowMs: 10 * 60000, max: 10 }), wrap(asy
      ORDER BY id DESC LIMIT 1`,
     [ref.id, sex, lang, JSON.stringify(results)],
   );
-  if (cached.rows[0]) return res.json({ answer: present(cached.rows[0].answer) });
+  if (cached.rows[0]) {
+    track('ai:cached');
+    return res.json({ answer: present(cached.rows[0].answer) });
+  }
 
-  if (!underDailyLimit(Number(cfg['interpret.daily_limit']) || 0)) return res.status(429).json({ error: 'daily_limit' });
+  if (!underDailyLimit(Number(cfg['interpret.daily_limit']) || 0)) {
+    track('ai:limit');
+    return res.status(429).json({ error: 'daily_limit' });
+  }
 
   const r = await askN8n({
     url: cfg['interpret.webhook_url'],
@@ -124,8 +135,10 @@ router.post('/interpret', rateLimit({ windowMs: 10 * 60000, max: 10 }), wrap(asy
   }).catch((err) => ({ error: err.name === 'TimeoutError' ? 'n8n: vaqt tugadi' : `n8n: ${err.message}` }));
   if (r.error) {
     console.error('Interpret:', r.error); // bemor ma'lumoti logga yozilmaydi
+    track('ai:error');
     return res.status(502).json({ error: 'ai_unavailable' });
   }
+  track('ai:new');
 
   await query(
     `INSERT INTO interpretations (lis_id, sex, age, lang, specialty, urgency, results, answer)
