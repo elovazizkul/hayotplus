@@ -316,8 +316,8 @@ export const ui = {
       ru: 'Результаты придут в Telegram файлом PDF. В боте нажмите «Start».',
     },
     telegramPendingHint: {
-      uz: 'Hozir Telegram’ga ulaning — kvitansiya saqlanadi, uni qayta skanerlash shart emas. Botda «Start» tugmasini bosing.',
-      ru: 'Подключитесь к Telegram сейчас — квитанция сохранится, сканировать её заново не нужно. В боте нажмите «Start».',
+      uz: 'Hozir Telegram’ga ulaning — natija tayyor boʻlishi bilan bot uni PDF qilib oʻzi yuboradi. Kvitansiyani qayta skanerlash shart emas. Botda «Start» tugmasini bosing.',
+      ru: 'Подключитесь к Telegram сейчас — как только результат будет готов, бот сам пришлёт его файлом PDF. Сканировать квитанцию заново не нужно. В боте нажмите «Start».',
     },
     telegramError: {
       uz: 'Telegram havolasini yaratib boʻlmadi. Birozdan keyin urinib koʻring yoki qoʻngʻiroq qiling: {phone}',

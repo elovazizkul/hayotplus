@@ -14,7 +14,10 @@ const CARDS = [
   { id: 'pending', label: 'Natija hali tayyor emas', hint: 'QR skanerlandi, lekin tahlil hali bajarilmoqda', metrics: ['results:pending'] },
   { id: 'botLink', label: '“Telegram’ga yuborish” bosildi', hint: 'Natijalar botiga havola yaratildi', metrics: ['bot:link'] },
   { id: 'botPdf', label: 'Bot: PDF yuborildi', hint: 'Bemor Telegram’da natijani oldi', metrics: ['bot:pdf'] },
-  { id: 'botPending', label: 'Bot: hali tayyor emas', hint: 'Botda tekshirildi, natija hali yoʻq', metrics: ['bot:pending'] },
+  { id: 'botAuto', label: 'Bot: PDF avtomatik yuborildi', hint: 'Natija tayyor boʻlishi bilan bot oʻzi yubordi', metrics: ['bot:auto'] },
+  { id: 'botUpdated', label: 'Bot: natijalar yangilandi', hint: 'Yuborilgandan keyin natija toʻldirildi — yangi PDF ketdi', metrics: ['bot:updated'] },
+  { id: 'botOperator', label: 'Bot: “operator yuboradi” deb yozildi', hint: 'N kun ichida natija chiqmadi (autsors)', metrics: ['bot:operator'] },
+  { id: 'botPending', label: 'Bot: hali tayyor emas', hint: 'Bemor botda oʻzi tekshirdi, natija hali yoʻq', metrics: ['bot:pending'] },
   { id: 'errors', label: 'Muammolar', hint: 'AI xatosi, kunlik chegara, topilmagan natija, bot xatosi', metrics: ['ai:error', 'ai:limit', 'results:notfound', 'bot:error'] },
 ];
 const PERIODS = [

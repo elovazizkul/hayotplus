@@ -2,9 +2,11 @@
 //  NATIJALAR BOTI (Telegram) — alohida jarayon: node server/bot/index.js
 // ============================================================
 //  1-bosqich: saytdagi "Telegram'ga yuborish" → /start <kalit> → rozilik → PDF.
-//  Natija hali tayyor bo'lmasa — "Tekshirish" tugmasi (avtomatik tekshirish — 2-bosqich).
+//  2-bosqich: natija hali tayyor bo'lmasa, bot laboratoriya dasturini o'zi tekshiradi
+//  (jadval — admin panelda) va tayyor bo'lishi bilan PDF ni o'zi yuboradi. Tunda yubormaydi.
+//  N kundan keyin "qolgan natijalarni operator yuboradi" deb bir marta yozadi (autsors tahlillar).
+//  Yuborilgandan keyin 14 kun natija o'zgarmadimi (qisman natija to'ldirildimi) kuzatadi.
 //  Bot Telegram'dan yangi xabarlarni o'zi so'raydi (long polling): serverda yangi manzil ochilmaydi.
-//  Token, nom va yoqish/o'chirish — admin panel → "Natijalar boti".
 //  Bemor ismi, telefoni saqlanmaydi; laboratoriya kaliti (tmpK) bazada shifrlangan, logga yozilmaydi.
 // ============================================================
 
@@ -18,15 +20,21 @@ import { botReady } from './link.js';
 import { createTelegram } from './telegram.js';
 import { renderPdf } from './pdf.js';
 import { say } from './texts.js';
+import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig, WATCH_DAYS } from './schedule.js';
 
 const CHECK_GAP_SECONDS = 30; // bir blankni 30 soniyada bir martadan ko'p tekshirmaymiz
-const KEEP_DAYS = 30; // laboratoriya kaliti shuncha kundan keyin o'chiriladi
+const KEEP_DAYS = 30; // laboratoriya kaliti kamida shuncha kundan keyin o'chiriladi
+const RETRY_MINUTES = 30; // laboratoriya dasturi yoki PDF xatosida qayta urinish
+const WORKER_EVERY_MS = 60000; // navbatdagi blanklarni har daqiqada ko'rib chiqamiz
+const WORKER_BATCH = 20; // bir martada eng ko'pi bilan
+const WORKER_GAP_MS = 1500; // blanklar orasida — laboratoriya dasturiga yuklama bo'lmasin
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Xato matnidan laboratoriya kaliti chiqib ketmasin
 const safe = (err) => String(err?.message || err).replace(/tmpK=[^&\s"']+/g, 'tmpK=***').slice(0, 300);
 
 let cfg = {};
+let tg = null;
 
 function siteInfo() {
   const raw = String(cfg['site.url'] || site.url || 'hayotplus.uz').trim().replace(/\/+$/, '');
@@ -52,21 +60,36 @@ function takeLink(key, telegramId) {
   });
 }
 
-// Tekshirishga ruxsat: buyurtma shu odamniki va oxirgi tekshiruvdan 30 soniya o'tgan
+// Tekshirishga ruxsat: buyurtma shu odamniki va oxirgi tekshiruvdan 30 soniya o'tgan.
+// Qo'lda ("Tekshirish") va avtomatik tekshiruv bir vaqtga to'g'ri kelsa, PDF ikki marta ketmaydi.
 async function claim(orderId, telegramId) {
   const { rows } = await query(
     `UPDATE bot_orders SET last_checked_at = now(), checks = checks + 1
      WHERE id = $1 AND telegram_id = $2
        AND (last_checked_at IS NULL OR last_checked_at < now() - make_interval(secs => $3))
-     RETURNING id, lis_id, lis_key`,
+     RETURNING id, telegram_id, lis_id, lis_key, status, result_hash, operator_notified_at, created_at, delivered_at`,
     [orderId, telegramId, CHECK_GAP_SECONDS],
   );
   return rows[0] || null;
 }
 
-async function deliver(tg, chatId, order, lang) {
+const setOrder = (id, fields) => {
+  const keys = Object.keys(fields);
+  return query(
+    `UPDATE bot_orders SET ${keys.map((k, i) => `${k} = $${i + 2}`).join(', ')} WHERE id = $1`,
+    [id, ...keys.map((k) => fields[k])],
+  );
+};
+
+const minutesFromNow = (m) => new Date(Date.now() + m * 60000);
+
+// Bitta blankni tekshirish. manual = bemor o'zi so'radi (Start, "Roziman", "Tekshirish") — doim javob beramiz.
+// Avtomatik tekshiruvda bemor faqat yangilik bo'lganda xabar oladi: PDF, "yangilandi", "operator yuboradi".
+async function checkOrder(chatId, order, lang, manual) {
   const info = siteInfo();
+  const s = scheduleConfig(cfg);
   const checkButton = [[{ text: say('check', lang), callback_data: `chk:${order.id}` }]];
+  const delivered = order.status === 'delivered';
 
   let ref = null;
   try {
@@ -74,42 +97,126 @@ async function deliver(tg, chatId, order, lang) {
   } catch {
     ref = null;
   }
-  if (!ref) return tg.send(chatId, say('gone', lang, info));
+  if (!ref) {
+    await setOrder(order.id, { next_check_at: null });
+    if (manual) await tg.send(chatId, say('gone', lang, info));
+    return;
+  }
 
-  await tg.typing(chatId, 'typing');
+  if (manual) await tg.typing(chatId, 'typing');
   let page;
   try {
     page = await fetchLis(ref);
   } catch (err) {
     console.error('Bot LIS:', safe(err));
-    return tg.send(chatId, say('lisError', lang), checkButton);
-  }
-  if (!page) {
-    await query("UPDATE bot_orders SET status = 'failed' WHERE id = $1", [order.id]);
-    return tg.send(chatId, say('notFound', lang, info));
-  }
-  if (page.status === 'pending') {
-    track('bot:pending');
-    return tg.send(chatId, say('pending', lang), checkButton);
+    await setOrder(order.id, { next_check_at: minutesFromNow(RETRY_MINUTES) });
+    if (manual) await tg.send(chatId, say('lisError', lang), checkButton);
+    return;
   }
 
-  await tg.typing(chatId);
+  // Laboratoriya dasturi kalitni rad etdi
+  if (!page) {
+    await setOrder(order.id, { next_check_at: null, status: delivered ? 'delivered' : 'failed' });
+    if (manual || !delivered) await tg.send(chatId, say('notFound', lang, info));
+    return;
+  }
+
+  if (page.status === 'pending') {
+    if (delivered) {
+      await setOrder(order.id, { next_check_at: nextWatchCheck(order.delivered_at) });
+      return;
+    }
+    const next = nextPendingCheck(order.created_at, s);
+    const notifyOperator = !order.operator_notified_at && ageDays(order.created_at) >= s.operatorDays;
+    if (notifyOperator) {
+      await tg.send(chatId, say('operator', lang, info), checkButton);
+      track('bot:operator');
+    } else if (manual) {
+      await tg.send(chatId, say('pending', lang), checkButton);
+    }
+    if (manual) track('bot:pending');
+    if (!next) track('bot:expired');
+    await setOrder(order.id, {
+      next_check_at: next,
+      status: next ? 'pending' : 'expired',
+      ...(notifyOperator ? { operator_notified_at: new Date() } : {}),
+    });
+    return;
+  }
+
+  // Natija tayyor
+  const hash = resultHash(page.lab);
+  const changed = delivered && Boolean(order.result_hash) && order.result_hash !== hash;
+  if (delivered && !changed && !manual) {
+    await setOrder(order.id, { result_hash: hash, next_check_at: nextWatchCheck(order.delivered_at) });
+    return;
+  }
+
+  if (manual) await tg.typing(chatId);
   let pdf;
   try {
     pdf = await renderPdf(page.html);
   } catch (err) {
     console.error('Bot PDF:', safe(err));
     track('bot:error');
-    return tg.send(chatId, say('pdfError', lang, info), checkButton);
+    await setOrder(order.id, { next_check_at: minutesFromNow(RETRY_MINUTES) });
+    if (manual) await tg.send(chatId, say('pdfError', lang, info), checkButton);
+    return;
   }
   const n = page.lab.number || ref.id;
-  const caption = say('caption', lang, { n, d: page.lab.date ? say('date', lang, { d: page.lab.date }) : '', phone: info.phone });
+  const head = changed ? say('updated', lang) : !delivered && !manual ? say('readyAuto', lang) : '';
+  const caption = head + say('caption', lang, { n, d: page.lab.date ? say('date', lang, { d: page.lab.date }) : '', phone: info.phone });
   await tg.sendPdf(chatId, pdf, `HayotPlus-${n}.pdf`, caption);
-  await query("UPDATE bot_orders SET status = 'delivered', delivered_at = now() WHERE id = $1", [order.id]);
+
+  const deliveredAt = order.delivered_at || new Date();
+  await setOrder(order.id, {
+    status: 'delivered',
+    delivered_at: deliveredAt,
+    result_hash: hash,
+    next_check_at: nextWatchCheck(deliveredAt),
+  });
   track('bot:pdf');
+  if (changed) track('bot:updated');
+  else if (!delivered && !manual) track('bot:auto');
 }
 
-async function onMessage(tg, msg) {
+// ---- Avtomatik tekshiruv: vaqti kelgan blanklar navbat bilan ----
+let working = false;
+async function worker() {
+  if (working || !tg || !botReady(cfg) || isQuiet(scheduleConfig(cfg))) return;
+  working = true;
+  try {
+    const { rows } = await query(
+      `SELECT o.id, o.telegram_id, u.lang FROM bot_orders o JOIN bot_users u USING (telegram_id)
+       WHERE o.next_check_at <= now() AND o.lis_key IS NOT NULL AND u.consent_at IS NOT NULL
+       ORDER BY o.next_check_at LIMIT $1`,
+      [WORKER_BATCH],
+    );
+    for (const row of rows) {
+      const order = await claim(row.id, row.telegram_id);
+      if (order) {
+        await checkOrder(row.telegram_id, order, row.lang, false).catch(async (err) => {
+          console.error('Bot auto:', safe(err));
+          track('bot:error');
+          // 403 — bemor botni bloklagan: unga boshqa yozmaymiz
+          const blocked = err.code === 403;
+          await query(
+            `UPDATE bot_orders SET next_check_at = ${blocked ? 'NULL' : "now() + interval '30 minutes'"} WHERE ${blocked ? 'telegram_id' : 'id'} = $1`,
+            [blocked ? row.telegram_id : row.id],
+          ).catch(() => {});
+        });
+      }
+      await sleep(WORKER_GAP_MS);
+    }
+  } catch (err) {
+    console.error('Bot worker:', safe(err));
+  } finally {
+    working = false;
+  }
+}
+
+// ---- Bemor xabarlari ----
+async function onMessage(msg) {
   if (msg.chat?.type !== 'private' || !msg.from || msg.from.is_bot) return; // guruhlarda ishlamaydi
   const chatId = msg.chat.id;
   const start = String(msg.text || '').trim().match(/^\/start(?:@\w+)?\s+([A-Za-z0-9_-]{20,64})$/);
@@ -140,10 +247,10 @@ async function onMessage(tg, msg) {
     ]]);
   }
   const claimed = await claim(order.id, msg.from.id);
-  if (claimed) await deliver(tg, chatId, claimed, lang);
+  if (claimed) await checkOrder(chatId, claimed, lang, true);
 }
 
-async function onCallback(tg, cb) {
+async function onCallback(cb) {
   const m = String(cb.data || '').match(/^(ok|no|chk):(\d{1,18})$/);
   const chat = cb.message?.chat;
   if (!m || chat?.type !== 'private') return tg.answer(cb.id);
@@ -170,23 +277,25 @@ async function onCallback(tg, cb) {
   if (!claimed) return tg.answer(cb.id, say('wait', lang));
   await tg.answer(cb.id); // Telegram tugma javobini tez kutadi — PDF tayyorlashdan oldin
   await tg.removeButtons(chat.id, cb.message.message_id);
-  await deliver(tg, chat.id, claimed, lang);
+  await checkOrder(chat.id, claimed, lang, true);
 }
 
-function handle(tg, update) {
-  const run = update.message ? onMessage(tg, update.message) : update.callback_query ? onCallback(tg, update.callback_query) : null;
+function handle(update) {
+  const run = update.message ? onMessage(update.message) : update.callback_query ? onCallback(update.callback_query) : null;
   return Promise.resolve(run).catch((err) => {
     console.error('Bot:', safe(err));
     track('bot:error');
   });
 }
 
-// Eskirgan bir martalik kalitlar va 30 kundan eski laboratoriya kalitlari o'chiriladi
+// Eskirgan bir martalik kalitlar va eski laboratoriya kalitlari o'chiriladi
 async function purge() {
+  const keepDays = Math.max(KEEP_DAYS, scheduleConfig(cfg).maxDays, WATCH_DAYS);
   await query("DELETE FROM bot_links WHERE expires_at < now() - interval '1 day'");
   await query(
-    'UPDATE bot_orders SET lis_key = NULL WHERE lis_key IS NOT NULL AND coalesce(delivered_at, created_at) < now() - make_interval(days => $1)',
-    [KEEP_DAYS],
+    `UPDATE bot_orders SET lis_key = NULL, next_check_at = NULL
+     WHERE lis_key IS NOT NULL AND coalesce(delivered_at, created_at) < now() - make_interval(days => $1)`,
+    [keepDays],
   );
 }
 
@@ -194,7 +303,7 @@ async function purge() {
 async function waitForTables() {
   for (;;) {
     try {
-      await query('SELECT 1 FROM bot_orders LIMIT 1');
+      await query('SELECT next_check_at FROM bot_orders LIMIT 1');
       return;
     } catch {
       console.log('Bot: baza hali tayyor emas, kutilmoqda...');
@@ -205,11 +314,12 @@ async function waitForTables() {
 
 async function main() {
   await waitForTables();
+  cfg = await getConfig();
   const runPurge = () => purge().catch((err) => console.error('Bot purge:', safe(err)));
   await runPurge();
   setInterval(runPurge, 12 * 3600000).unref();
+  setInterval(worker, WORKER_EVERY_MS).unref();
 
-  let tg = null;
   let token = '';
   let offset = 0;
   let idle = false;
@@ -220,6 +330,7 @@ async function main() {
         if (!idle) console.log('Bot oʻchirilgan yoki sozlanmagan (admin panel → Natijalar boti). Kutilmoqda...');
         idle = true;
         token = '';
+        tg = null;
         await sleep(30000);
         continue;
       }
@@ -236,10 +347,11 @@ async function main() {
       const updates = await tg.getUpdates(offset);
       for (const u of updates) {
         offset = u.update_id + 1;
-        handle(tg, u); // har bir xabar alohida; PDF lar navbat bilan (pdf.js)
+        handle(u); // har bir xabar alohida; PDF lar navbat bilan (pdf.js)
       }
     } catch (err) {
-      console.error('Bot:', safe(err));
+      // Telegram ba'zan bir daqiqaga javob bermaydi (502, timeout) — jim qayta ulanamiz
+      if (err.code !== 0 && err.code !== 502) console.error('Bot:', safe(err));
       // 401 — token noto'g'ri, 409 — shu token bilan boshqa joyda ham bot ishlayapti
       await sleep(err.code === 401 || err.code === 404 ? 60000 : err.code === 409 ? 15000 : 5000);
     }

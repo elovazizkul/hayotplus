@@ -54,6 +54,7 @@ admin.get('/stats', wrap(async (req, res) => {
     aiReady: Boolean(cfg['ai.api_key']) && cfg['ai.enabled'] === 'true',
     telegramReady: Boolean(cfg['telegram.bot_token'] && cfg['telegram.chat_id']),
     botReady: botReady(cfg),
+    botWaiting: (await query("SELECT count(*)::int AS n FROM bot_orders WHERE status = 'pending' AND next_check_at IS NOT NULL")).rows[0].n,
     recent: (await repo.list('audit', { pageSize: 8 })).items,
   });
 }));

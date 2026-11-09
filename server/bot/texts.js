@@ -25,9 +25,15 @@ export const T = {
   },
   date: { uz: ', sana: {d}', ru: ', дата: {d}' },
   pending: {
-    uz: 'Natijalar hali tayyor emas. Kvitansiya saqlandi — uni qayta skanerlash shart emas.\n\nKeyinroq «Tekshirish» tugmasini bosing.',
-    ru: 'Результаты ещё не готовы. Квитанция сохранена — сканировать её заново не нужно.\n\nПозже нажмите «Проверить».',
+    uz: 'Natijalar hali tayyor emas. Kvitansiya saqlandi — uni qayta skanerlash shart emas.\n\nTayyor boʻlishi bilan shu yerga oʻzimiz yuboramiz. Xohlasangiz, «Tekshirish» tugmasini bosing.',
+    ru: 'Результаты ещё не готовы. Квитанция сохранена — сканировать её заново не нужно.\n\nКак только будут готовы, мы сами пришлём их сюда. Можно и проверить вручную — кнопка «Проверить».',
   },
+  operator: {
+    uz: 'Natijalar hali tayyor emas. Baʼzi tahlillar boshqa laboratoriyada bajariladi — qolgan natijalarni operatorimiz alohida yuboradi.\n\nNatija bizning dasturda paydo boʻlsa, shu yerga ham yuboramiz. Savollar boʻlsa: {phone}',
+    ru: 'Результаты ещё не готовы. Некоторые анализы выполняются в другой лаборатории — оставшиеся результаты наш оператор пришлёт отдельно.\n\nЕсли результат появится в нашей программе, мы пришлём его и сюда. Если есть вопросы: {phone}',
+  },
+  readyAuto: { uz: '✅ Natijalaringiz tayyor!\n\n', ru: '✅ Ваши результаты готовы!\n\n' },
+  updated: { uz: '🔄 Natijalar yangilandi — toʻliq variant.\n\n', ru: '🔄 Результаты обновились — полная версия.\n\n' },
   check: { uz: '🔄 Tekshirish', ru: '🔄 Проверить' },
   wait: { uz: 'Biroz kuting va qayta bosing', ru: 'Подождите немного и нажмите снова' },
   notFound: {

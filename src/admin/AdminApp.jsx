@@ -75,6 +75,7 @@ function Dashboard({ go }) {
   const cards = [
     { label: 'Bugun tashrif buyuruvchilar', value: s.visitorsToday, page: 'stats' },
     { label: 'Bugun AI izohlar', value: s.aiToday, page: 'stats' },
+    { label: 'Botda kutilmoqda (natija hali tayyor emas)', value: s.botWaiting, page: 'stats' },
     { label: 'Yangi arizalar', value: s.newLeads, page: 'leads' },
     { label: 'Bugungi arizalar', value: s.todayLeads, page: 'leads' },
     { label: 'Tahlillar', value: s.tests, page: 'tests' },

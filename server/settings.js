@@ -31,6 +31,13 @@ export const SETTINGS = [
   { key: 'bot.enabled', group: 'bot', label: 'Natijalar boti yoqilgan (saytda “Telegram’ga yuborish” tugmasi)', type: 'bool', default: 'false' },
   { key: 'bot.username', group: 'bot', label: 'Bot nomi (@ belgisisiz)', type: 'text', hint: 'Masalan: hayotplus_natija_bot' },
   { key: 'bot.token', group: 'bot', label: 'Bot tokeni', type: 'secret', hint: '@BotFather → /newbot. Arizalar boti (@hayotpluslab_bot) emas — bemorlar uchun alohida bot.' },
+  { key: 'bot.fast_days', group: 'bot', label: 'Avtomatik tekshiruv: birinchi necha kun tez-tez', type: 'int', default: '2', hint: 'Natija hali tayyor boʻlmasa, bot laboratoriya dasturini oʻzi tekshiradi.' },
+  { key: 'bot.fast_minutes', group: 'bot', label: '… shu kunlarda har necha daqiqada', type: 'int', default: '30', hint: 'Kamida 10 daqiqa.' },
+  { key: 'bot.slow_hours', group: 'bot', label: 'Keyin har necha soatda', type: 'int', default: '4' },
+  { key: 'bot.operator_days', group: 'bot', label: 'Necha kundan keyin “qolgan natijalarni operator yuboradi” deb yozish', type: 'int', default: '7', hint: 'Autsors tahlillar uchun. Bot shundan keyin ham jim tekshirishda davom etadi.' },
+  { key: 'bot.max_days', group: 'bot', label: 'Eng koʻpi necha kun tekshirish', type: 'int', default: '30', hint: 'Shundan keyin bot bu kvitansiyani jim tekshirmay qoʻyadi.' },
+  { key: 'bot.quiet_from', group: 'bot', label: 'Tungi tinchlik: soat nechadan (Toshkent vaqti)', type: 'int', default: '22', hint: 'Shu vaqtda bot oʻzi hech narsa yubormaydi — ertalab yuboradi.' },
+  { key: 'bot.quiet_to', group: 'bot', label: 'Tungi tinchlik: soat nechagacha', type: 'int', default: '7' },
 
   { key: 'site.name', group: 'site', label: 'Sayt nomi', type: 'text' },
   { key: 'site.url', group: 'site', label: 'Sayt manzili', type: 'text' },
