@@ -41,7 +41,8 @@ export function purgeVisitMarks() {
 
 export const METRICS = [
   'view:home', 'uniq:site', 'uniq:home', 'view:natija', 'uniq:natija',
-  'results:ok', 'results:notfound', 'ai:new', 'ai:cached', 'ai:error', 'ai:limit',
+  'results:ok', 'results:notfound', 'results:pending', 'ai:new', 'ai:cached', 'ai:error', 'ai:limit',
+  'bot:link', 'bot:start', 'bot:pdf', 'bot:pending', 'bot:error',
 ];
 
 // Oxirgi `days` kun: har kun bo'yicha qatorlar + bugun / 7 / 30 kun / jami yig'indilar

@@ -2,7 +2,8 @@
 //  HAYOT PLUS SERVERI
 // ============================================================
 //  - tayyor saytni beradi (dist/) va bazadagi ma'lumotni unga qo'shadi
-//  - /api/chat, /api/lead, /api/results, /api/interpret — sayt uchun
+//  - /api/chat, /api/lead, /api/results, /api/interpret, /api/bot-link — sayt uchun
+//  - natijalar boti alohida jarayon: server/bot/index.js (docker-compose: bot)
 //  - /api/admin/* — admin panel, /mcp — Claude uchun
 //  Kerakli sozlamalar: DATABASE_URL, APP_SECRET, ADMIN_PASSWORD (.env.example)
 // ============================================================
@@ -19,6 +20,7 @@ import { rateLimit } from './security.js';
 import admin from './admin.js';
 import mcp from './mcp.js';
 import interpret, { purgeOldInterpretations } from './interpret.js';
+import botLink from './bot/link.js';
 import { purgeVisitMarks, trackVisit } from './stats.js';
 import { handleChat } from '../api/chat.js';
 import { handleLead } from '../api/lead.js';
@@ -109,6 +111,7 @@ app.post('/api/lead', rateLimit({ windowMs: 60000, max: 10 }), json, async (req,
 });
 
 app.use('/api', json, interpret);
+app.use('/api', json, botLink);
 
 app.use('/api/admin', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');

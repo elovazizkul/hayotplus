@@ -66,10 +66,18 @@ export function parseResultsHtml(html) {
   };
 }
 
-// null — havola noto'g'ri yoki eskirgan (laboratoriya dasturi rad etdi)
-export async function fetchResults(ref) {
-  const url = `https://${LIS_HOST}/q/r/result?id=${ref.id}&tmpK=${encodeURIComponent(ref.key)}`;
-  const r = await fetch(url, {
+export const lisUrl = (ref) => `https://${LIS_HOST}/q/r/result?id=${ref.id}&tmpK=${encodeURIComponent(ref.key)}`;
+
+// Natija hali tayyor bo'lmasa, sahifada: "Hurmatli <ISM>, analiz natijalari xali tayyor emas. Iltimos kutib turing."
+// Sahifadan hech narsa olinmaydi (unda bemor ismi bor) — faqat "tayyor emas" ekani.
+export const isPendingPage = (html) => /tayyor\s+emas|(?:ещё|еще)\s+не\s+готов/i.test(html);
+
+// { status: 'ready', lab, html } — natija tayyor
+// { status: 'pending' }          — kvitansiya haqiqiy, lekin natija hali tayyor emas
+// null                            — havola noto'g'ri yoki eskirgan (laboratoriya dasturi rad etdi)
+// Xato (throw)                    — laboratoriya dasturi javob bermadi
+export async function fetchLis(ref) {
+  const r = await fetch(lisUrl(ref), {
     redirect: 'error',
     signal: AbortSignal.timeout(15000),
     headers: { 'user-agent': 'HayotPlus-site/1.0', accept: 'text/html' },
@@ -77,6 +85,13 @@ export async function fetchResults(ref) {
   if (r.status === 403 || r.status === 404) return null;
   if (!r.ok) throw new Error(`Laboratoriya dasturi javob bermadi: ${r.status}`);
   const html = (await r.text()).slice(0, 2_000_000);
-  const parsed = parseResultsHtml(html);
-  return parsed.groups.length ? parsed : null;
+  const lab = parseResultsHtml(html);
+  if (lab.groups.length) return { status: 'ready', lab, html };
+  return isPendingPage(html) ? { status: 'pending' } : null;
+}
+
+// Faqat tayyor natijalar (AI izohi uchun): null — topilmadi yoki hali tayyor emas
+export async function fetchResults(ref) {
+  const page = await fetchLis(ref);
+  return page?.status === 'ready' ? page.lab : null;
 }

@@ -6,8 +6,9 @@ import { Router } from 'express';
 import { query } from './db.js';
 import { getConfig } from './settings.js';
 import { rateLimit } from './security.js';
-import { checkRef, fetchResults } from './lis.js';
+import { checkRef, fetchLis, fetchResults } from './lis.js';
 import { track } from './stats.js';
+import { botReady } from './bot/link.js';
 
 const SPECIALTIES = ['endo', 'cardio', 'neph', 'gastro', 'gyn', 'uro', 'hema', 'gp', 'rheum', 'neuro', 'infect', 'ped', 'none'];
 const URGENCY = ['routine', 'soon', 'urgent'];
@@ -78,20 +79,25 @@ const router = Router();
 router.post('/results', rateLimit({ windowMs: 60000, max: 20 }), wrap(async (req, res) => {
   const ref = checkRef(req.body?.id, req.body?.key);
   if (!ref) return res.status(400).json({ error: 'bad_link' });
-  const lab = await fetchResults(ref).catch((err) => {
+  const page = await fetchLis(ref).catch((err) => {
     console.error('LIS:', err.message);
     return undefined;
   });
-  if (lab === undefined) return res.status(502).json({ error: 'lis_unavailable' });
-  if (!lab) {
+  if (page === undefined) return res.status(502).json({ error: 'lis_unavailable' });
+  if (!page) {
     track('results:notfound');
     return res.status(404).json({ error: 'not_found' });
   }
-  track('results:ok');
   const cfg = await getConfig();
-  const interpretEnabled = cfg['interpret.enabled'] === 'true' && Boolean(cfg['interpret.webhook_url'] && cfg['interpret.token']);
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ ...lab, interpretEnabled });
+  // Kvitansiya haqiqiy, natija hali tayyor emas: sahifa buni ochiq aytadi va botga ulanishni taklif qiladi
+  if (page.status === 'pending') {
+    track('results:pending');
+    return res.json({ pending: true, botEnabled: botReady(cfg) });
+  }
+  track('results:ok');
+  const interpretEnabled = cfg['interpret.enabled'] === 'true' && Boolean(cfg['interpret.webhook_url'] && cfg['interpret.token']);
+  res.json({ ...page.lab, interpretEnabled, botEnabled: botReady(cfg) });
 }));
 
 router.post('/interpret', rateLimit({ windowMs: 10 * 60000, max: 10 }), wrap(async (req, res) => {

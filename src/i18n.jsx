@@ -301,6 +301,29 @@ export const ui = {
       uz: 'Laboratoriya dasturi hozir javob bermayapti. Birozdan keyin urinib koʻring.',
       ru: 'Лабораторная программа сейчас не отвечает. Попробуйте чуть позже.',
     },
+    pending: {
+      uz: 'Natijalar hali tayyor emas. Kvitansiya haqiqiy — tahlillar laboratoriyada bajarilmoqda.',
+      ru: 'Результаты ещё не готовы. Квитанция действительна — анализы выполняются в лаборатории.',
+    },
+    pendingNoBot: {
+      uz: 'Tayyor boʻlgach, shu QR-kodni qayta skanerlang. Savollar boʻlsa: {phone}',
+      ru: 'Когда будут готовы, отсканируйте этот QR-код ещё раз. Если есть вопросы: {phone}',
+    },
+    telegram: { uz: 'Telegram’ga yuborish', ru: 'Отправить в Telegram' },
+    telegramOpening: { uz: 'Telegram ochilmoqda...', ru: 'Открываем Telegram...' },
+    telegramHint: {
+      uz: 'Natijalar PDF fayl koʻrinishida Telegram’ga keladi. Botda «Start» tugmasini bosing.',
+      ru: 'Результаты придут в Telegram файлом PDF. В боте нажмите «Start».',
+    },
+    telegramPendingHint: {
+      uz: 'Hozir Telegram’ga ulaning — kvitansiya saqlanadi, uni qayta skanerlash shart emas. Botda «Start» tugmasini bosing.',
+      ru: 'Подключитесь к Telegram сейчас — квитанция сохранится, сканировать её заново не нужно. В боте нажмите «Start».',
+    },
+    telegramError: {
+      uz: 'Telegram havolasini yaratib boʻlmadi. Birozdan keyin urinib koʻring yoki qoʻngʻiroq qiling: {phone}',
+      ru: 'Не удалось создать ссылку на Telegram. Попробуйте чуть позже или позвоните: {phone}',
+    },
+    telegramFallback: { uz: 'Telegram ochilmasa, shu havolani bosing', ru: 'Если Telegram не открылся, нажмите эту ссылку' },
     blank: { uz: 'Blank №{n}', ru: 'Бланк №{n}' },
     date: { uz: 'Sana: {d}', ru: 'Дата: {d}' },
     age: { uz: 'Yoshi: {n}', ru: 'Возраст: {n}' },

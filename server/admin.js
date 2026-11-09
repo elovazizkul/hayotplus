@@ -11,6 +11,7 @@ import { randomToken, rateLimit, sha256 } from './security.js';
 import { askClaude } from '../api/chat.js';
 import { askN8n } from './interpret.js';
 import { siteStats } from './stats.js';
+import { botReady, botUsername } from './bot/link.js';
 
 const ACTOR = 'admin';
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -52,6 +53,7 @@ admin.get('/stats', wrap(async (req, res) => {
     aiToday: today('ai:new', 'ai:cached'),
     aiReady: Boolean(cfg['ai.api_key']) && cfg['ai.enabled'] === 'true',
     telegramReady: Boolean(cfg['telegram.bot_token'] && cfg['telegram.chat_id']),
+    botReady: botReady(cfg),
     recent: (await repo.list('audit', { pageSize: 8 })).items,
   });
 }));
@@ -104,6 +106,21 @@ admin.post('/test/telegram', wrap(async (req, res) => {
     return res.status(400).json({ error: `Telegram rad etdi: ${data?.description || r.status}` });
   }
   res.json({ ok: true });
+}));
+
+// Natijalar boti: token haqiqiyligi va bot nomi mosligini tekshiradi
+admin.post('/test/bot', wrap(async (req, res) => {
+  const cfg = await getConfig();
+  if (!cfg['bot.token']) return res.status(400).json({ error: 'Bot tokeni kiritilmagan' });
+  const r = await fetch(`https://api.telegram.org/bot${cfg['bot.token']}/getMe`, { signal: AbortSignal.timeout(15000) }).catch(() => null);
+  const data = await r?.json().catch(() => null);
+  if (!data?.ok) return res.status(400).json({ error: `Telegram tokenni rad etdi: ${data?.description || 'javob yoʻq'}` });
+  const name = botUsername(cfg);
+  if (name.toLowerCase() !== String(data.result.username).toLowerCase()) {
+    return res.status(400).json({ error: `Token @${data.result.username} botiga tegishli, “Bot nomi” maydonida esa “${name || 'boʻsh'}”. Bir xil qiling.` });
+  }
+  const state = botReady(cfg) ? 'yoqilgan, saytda tugma koʻrinadi' : 'oʻchirilgan — “yoqilgan” belgisini qoʻying';
+  res.json({ ok: true, reply: `@${data.result.username} — ${state}`, model: 'Telegram' });
 }));
 
 // Namuna natijalar bilan (bemor ma'lumotisiz) n8n ni tekshiradi

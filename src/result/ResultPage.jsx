@@ -273,6 +273,46 @@ function AiBlock({ refData, enabled, onAnswer }) {
   );
 }
 
+// "Telegram'ga yuborish": server bir martalik qisqa kalit beradi (15 daqiqa), Telegram ilovasi ochiladi
+function TelegramButton({ refData, pending }) {
+  const { t, lang } = useLang();
+  const [state, setState] = useState({ status: 'idle' });
+
+  const open = async () => {
+    setState({ status: 'busy' });
+    try {
+      const res = await post('/api/bot-link', { ...refData, lang });
+      if (res.ok && res.data.url) {
+        setState({ status: 'opened', url: res.data.url });
+        window.location.href = res.data.url;
+      } else {
+        setState({ status: 'error', msg: res.status === 429 ? r.tooMany : r.telegramError });
+      }
+    } catch {
+      setState({ status: 'error', msg: r.telegramError });
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-2xl bg-surface-container-lowest p-5 shadow-sm md:p-6">
+      <button
+        type="button"
+        onClick={open}
+        disabled={state.status === 'busy'}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#229ED9] px-6 py-4 font-ui text-label-lg text-white shadow-md hover:bg-[#1c8bc0] disabled:opacity-60"
+      >
+        <Icon name="send" />
+        {state.status === 'busy' ? t(r.telegramOpening) : t(r.telegram)}
+      </button>
+      <p className="text-body-sm text-on-surface-variant">{t(pending ? r.telegramPendingHint : r.telegramHint)}</p>
+      {state.status === 'opened' && (
+        <a href={state.url} className="block text-center font-ui text-label-md text-primary underline">{t(r.telegramFallback)}</a>
+      )}
+      {state.status === 'error' && <Notice kind="error">{t(state.msg, { phone: site.phone })}</Notice>}
+    </div>
+  );
+}
+
 export default function ResultPage() {
   const { t } = useLang();
   const [ref, setRef] = useState(refFromLocation);
@@ -289,7 +329,7 @@ export default function ResultPage() {
       const res = await post('/api/results', next);
       if (res.ok) {
         setLab(res.data);
-        setStatus('ready');
+        setStatus(res.data.pending ? 'pending' : 'ready');
       } else {
         setStatus(res.status === 404 || res.status === 400 ? 'notFound' : res.status === 429 ? 'tooMany' : 'lisError');
       }
@@ -341,9 +381,24 @@ export default function ResultPage() {
             </button>
           </>
         )}
+        {status === 'pending' && lab && (
+          <>
+            <Notice>
+              <span className="flex items-start gap-2">
+                <Icon name="hourglass_top" size={22} className="shrink-0 text-primary" />
+                <span>{t(r.pending)}</span>
+              </span>
+            </Notice>
+            {lab.botEnabled ? <TelegramButton refData={ref} pending /> : <Notice>{t(r.pendingNoBot, { phone: site.phone })}</Notice>}
+            <button type="button" onClick={reset} className="font-ui text-label-md text-primary underline">
+              {t(r.another)}
+            </button>
+          </>
+        )}
         {status === 'ready' && lab && (
           <>
             <AiBlock key={`${ref.id}`} refData={ref} enabled={lab.interpretEnabled} onAnswer={(a) => setAbnormal(new Map(a.abnormal.map((x) => [x.name, x.flag])))} />
+            {lab.botEnabled && <TelegramButton refData={ref} />}
             <ResultsList lab={lab} abnormal={abnormal} />
             <p className="text-body-sm text-on-surface-variant">
               {t(r.questions)} <Phone />

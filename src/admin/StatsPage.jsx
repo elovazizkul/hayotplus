@@ -11,7 +11,11 @@ const CARDS = [
   { id: 'results', label: 'Natijalar koʻrildi', hint: 'QR/havola orqali natija ochildi', metrics: ['results:ok'] },
   { id: 'ai', label: 'AI izohlar', hint: 'Yangi + takroriy (keshdan)', metrics: ['ai:new', 'ai:cached'] },
   { id: 'aiNew', label: 'AI izoh: yangi', hint: 'n8n/OpenAI ishlatildi', metrics: ['ai:new'] },
-  { id: 'errors', label: 'Muammolar', hint: 'AI xatosi, kunlik chegara, topilmagan natija', metrics: ['ai:error', 'ai:limit', 'results:notfound'] },
+  { id: 'pending', label: 'Natija hali tayyor emas', hint: 'QR skanerlandi, lekin tahlil hali bajarilmoqda', metrics: ['results:pending'] },
+  { id: 'botLink', label: '“Telegram’ga yuborish” bosildi', hint: 'Natijalar botiga havola yaratildi', metrics: ['bot:link'] },
+  { id: 'botPdf', label: 'Bot: PDF yuborildi', hint: 'Bemor Telegram’da natijani oldi', metrics: ['bot:pdf'] },
+  { id: 'botPending', label: 'Bot: hali tayyor emas', hint: 'Botda tekshirildi, natija hali yoʻq', metrics: ['bot:pending'] },
+  { id: 'errors', label: 'Muammolar', hint: 'AI xatosi, kunlik chegara, topilmagan natija, bot xatosi', metrics: ['ai:error', 'ai:limit', 'results:notfound', 'bot:error'] },
 ];
 const PERIODS = [
   { key: 'today', label: 'Bugun' },

@@ -28,6 +28,10 @@ export const SETTINGS = [
   { key: 'interpret.token', group: 'interpret', label: 'X-HPM-Token paroli', type: 'secret', hint: 'n8n dagi Header Auth paroli bilan bir xil boʻlsin.' },
   { key: 'interpret.daily_limit', group: 'interpret', label: 'Kunlik izohlar chegarasi', type: 'int', default: '300', hint: 'Oshib ketsa, ertagacha izoh berilmaydi. OpenAI xarajatini nazorat qiladi.' },
 
+  { key: 'bot.enabled', group: 'bot', label: 'Natijalar boti yoqilgan (saytda “Telegram’ga yuborish” tugmasi)', type: 'bool', default: 'false' },
+  { key: 'bot.username', group: 'bot', label: 'Bot nomi (@ belgisisiz)', type: 'text', hint: 'Masalan: hayotplus_natija_bot' },
+  { key: 'bot.token', group: 'bot', label: 'Bot tokeni', type: 'secret', hint: '@BotFather → /newbot. Arizalar boti (@hayotpluslab_bot) emas — bemorlar uchun alohida bot.' },
+
   { key: 'site.name', group: 'site', label: 'Sayt nomi', type: 'text' },
   { key: 'site.url', group: 'site', label: 'Sayt manzili', type: 'text' },
   { key: 'site.phone', group: 'site', label: 'Asosiy telefon', type: 'text' },

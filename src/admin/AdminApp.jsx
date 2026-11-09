@@ -22,6 +22,7 @@ const NAV = [
   { id: 'faq', icon: 'quiz' },
   { id: 'site', label: 'Sayt sozlamalari', icon: 'tune' },
   { id: 'integrations', label: 'AI, Telegram, n8n', icon: 'smart_toy' },
+  { id: 'bot', label: 'Natijalar boti', icon: 'send' },
   { id: 'mcp', label: 'MCP (Claude)', icon: 'hub' },
   { id: 'audit', icon: 'history' },
   { id: 'security', label: 'Parol', icon: 'lock' },
@@ -87,6 +88,7 @@ function Dashboard({ go }) {
       <div className="mb-5 flex flex-wrap gap-2">
         <button type="button" onClick={() => go('integrations')}><Badge on={s.aiReady}>AI yordamchi: {s.aiReady ? 'ulangan' : 'ulanmagan'}</Badge></button>
         <button type="button" onClick={() => go('integrations')}><Badge on={s.telegramReady}>Telegram: {s.telegramReady ? 'ulangan' : 'ulanmagan'}</Badge></button>
+        <button type="button" onClick={() => go('bot')}><Badge on={s.botReady}>Natijalar boti: {s.botReady ? 'yoqilgan' : 'oʻchirilgan'}</Badge></button>
       </div>
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {cards.map((c) => (
@@ -219,6 +221,15 @@ export default function AdminApp() {
                 { path: '/test/telegram', label: 'Telegramni tekshirish' },
                 { path: '/test/interpret', label: 'n8n izohni tekshirish' },
               ]}
+            />
+          )}
+          {page === 'bot' && (
+            <SettingsPage
+              key="bot"
+              title="Natijalar boti (Telegram)"
+              subtitle="Bemorlar uchun alohida bot: saytdagi “Telegram’ga yuborish” tugmasi orqali natijani PDF qilib yuboradi. Token shifrlangan holda saqlanadi."
+              groups={['bot']}
+              tests={[{ path: '/test/bot', label: 'Botni tekshirish' }]}
             />
           )}
           {page === 'mcp' && <McpPage />}
