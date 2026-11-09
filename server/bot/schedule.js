@@ -7,8 +7,8 @@ const DAY = 86400000;
 const HOUR = 3600000;
 const MIN = 60000;
 
-// Yetkazilgandan keyin natija o'zgarmadimi (qisman natija to'ldirildimi) — shuncha kun, har shuncha soatda
-export const WATCH_DAYS = 14;
+// Yetkazilgandan keyin natija o'zgarmadimi (qisman natija to'ldirildimi) — har shuncha soatda,
+// necha kun — admin panelda (bot.watch_days)
 export const WATCH_HOURS = 6;
 
 const int = (v, def, min, max) => {
@@ -24,6 +24,7 @@ export function scheduleConfig(cfg = {}) {
     slowHours: int(cfg['bot.slow_hours'], 4, 1, 48),
     operatorDays: int(cfg['bot.operator_days'], 7, 1, maxDays),
     maxDays,
+    watchDays: int(cfg['bot.watch_days'], 3, 0, 30),
     quietFrom: int(cfg['bot.quiet_from'], 22, 0, 23),
     quietTo: int(cfg['bot.quiet_to'], 7, 0, 23),
   };
@@ -50,9 +51,9 @@ export function nextPendingCheck(createdAt, s, now = new Date()) {
 }
 
 // Yuborilgan blank: natija o'zgarmadimi — keyingi tekshiruv yoki null (kuzatish tugadi)
-export function nextWatchCheck(deliveredAt, now = new Date()) {
+export function nextWatchCheck(deliveredAt, s, now = new Date()) {
   const next = new Date(now.getTime() + WATCH_HOURS * HOUR);
-  return next - new Date(deliveredAt) <= WATCH_DAYS * DAY ? next : null;
+  return next - new Date(deliveredAt) <= s.watchDays * DAY ? next : null;
 }
 
 // Natijalar izi: nomlar, qiymatlar, birlik va me'yorlar bo'yicha. Izdan raqamlarni tiklab bo'lmaydi.

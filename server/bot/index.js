@@ -5,7 +5,7 @@
 //  2-bosqich: natija hali tayyor bo'lmasa, bot laboratoriya dasturini o'zi tekshiradi
 //  (jadval — admin panelda) va tayyor bo'lishi bilan PDF ni o'zi yuboradi. Tunda yubormaydi.
 //  N kundan keyin "qolgan natijalarni operator yuboradi" deb bir marta yozadi (autsors tahlillar).
-//  Yuborilgandan keyin 14 kun natija o'zgarmadimi (qisman natija to'ldirildimi) kuzatadi.
+//  Yuborilgandan keyin bir necha kun (admin panelda, standart 3) natija o'zgarmadimi kuzatadi.
 //  Bot Telegram'dan yangi xabarlarni o'zi so'raydi (long polling): serverda yangi manzil ochilmaydi.
 //  Bemor ismi, telefoni saqlanmaydi; laboratoriya kaliti (tmpK) bazada shifrlangan, logga yozilmaydi.
 // ============================================================
@@ -20,14 +20,17 @@ import { botReady } from './link.js';
 import { createTelegram } from './telegram.js';
 import { renderPdf } from './pdf.js';
 import { say } from './texts.js';
-import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig, WATCH_DAYS } from './schedule.js';
+import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig } from './schedule.js';
 
 const CHECK_GAP_SECONDS = 30; // bir blankni 30 soniyada bir martadan ko'p tekshirmaymiz
 const KEEP_DAYS = 30; // laboratoriya kaliti kamida shuncha kundan keyin o'chiriladi
 const RETRY_MINUTES = 30; // laboratoriya dasturi yoki PDF xatosida qayta urinish
-const WORKER_EVERY_MS = 60000; // navbatdagi blanklarni har daqiqada ko'rib chiqamiz
-const WORKER_BATCH = 20; // bir martada eng ko'pi bilan
-const WORKER_GAP_MS = 1500; // blanklar orasida — laboratoriya dasturiga yuklama bo'lmasin
+// Navbat: har daqiqada vaqti kelgan blanklar birma-bir, orasida pauza — laboratoriya dasturiga yuklama bo'lmasin.
+// Daqiqasiga ~60–90 ta tekshiruv: kuniga 300 bemorda ham navbat to'planib qolmaydi (eng og'ir holatda ~40/daqiqa).
+const WORKER_EVERY_MS = 60000;
+const WORKER_BATCH = 100;
+const WORKER_GAP_MS = 400;
+const WORKER_BUDGET_MS = 50000; // bitta aylanish 50 soniyadan oshmasin
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Xato matnidan laboratoriya kaliti chiqib ketmasin
@@ -123,7 +126,7 @@ async function checkOrder(chatId, order, lang, manual) {
 
   if (page.status === 'pending') {
     if (delivered) {
-      await setOrder(order.id, { next_check_at: nextWatchCheck(order.delivered_at) });
+      await setOrder(order.id, { next_check_at: nextWatchCheck(order.delivered_at, s) });
       return;
     }
     const next = nextPendingCheck(order.created_at, s);
@@ -148,7 +151,7 @@ async function checkOrder(chatId, order, lang, manual) {
   const hash = resultHash(page.lab);
   const changed = delivered && Boolean(order.result_hash) && order.result_hash !== hash;
   if (delivered && !changed && !manual) {
-    await setOrder(order.id, { result_hash: hash, next_check_at: nextWatchCheck(order.delivered_at) });
+    await setOrder(order.id, { result_hash: hash, next_check_at: nextWatchCheck(order.delivered_at, s) });
     return;
   }
 
@@ -173,7 +176,7 @@ async function checkOrder(chatId, order, lang, manual) {
     status: 'delivered',
     delivered_at: deliveredAt,
     result_hash: hash,
-    next_check_at: nextWatchCheck(deliveredAt),
+    next_check_at: nextWatchCheck(deliveredAt, s),
   });
   track('bot:pdf');
   if (changed) track('bot:updated');
@@ -192,7 +195,9 @@ async function worker() {
        ORDER BY o.next_check_at LIMIT $1`,
       [WORKER_BATCH],
     );
+    const started = Date.now();
     for (const row of rows) {
+      if (Date.now() - started > WORKER_BUDGET_MS) break; // qolganlari keyingi daqiqada
       const order = await claim(row.id, row.telegram_id);
       if (order) {
         await checkOrder(row.telegram_id, order, row.lang, false).catch(async (err) => {
@@ -290,7 +295,8 @@ function handle(update) {
 
 // Eskirgan bir martalik kalitlar va eski laboratoriya kalitlari o'chiriladi
 async function purge() {
-  const keepDays = Math.max(KEEP_DAYS, scheduleConfig(cfg).maxDays, WATCH_DAYS);
+  const s = scheduleConfig(cfg);
+  const keepDays = Math.max(KEEP_DAYS, s.maxDays, s.watchDays);
   await query("DELETE FROM bot_links WHERE expires_at < now() - interval '1 day'");
   await query(
     `UPDATE bot_orders SET lis_key = NULL, next_check_at = NULL
