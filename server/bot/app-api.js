@@ -9,6 +9,7 @@ import { getConfig } from '../settings.js';
 import { rateLimit } from '../security.js';
 import { botReady } from './link.js';
 import { parseRefForSex } from './values.js';
+import { ALL_AVATARS, AVATAR_COLORS } from '../../src/data/avatars.js';
 
 const MAX_AGE_SEC = 24 * 3600;
 
@@ -61,7 +62,7 @@ async function profileOf(req, pid) {
   if (pid === 'none') return { id: null, sex: null };
   if (!isId(pid)) return null;
   const { rows } = await query(
-    'SELECT id, relation, label, birth_year, sex FROM bot_patients WHERE id = $1 AND telegram_id = $2',
+    'SELECT id, relation, label, birth_year, sex, avatar, color FROM bot_patients WHERE id = $1 AND telegram_id = $2',
     [pid, req.me.telegram_id],
   );
   return rows[0] || null;
@@ -70,7 +71,7 @@ async function profileOf(req, pid) {
 router.get('/me', wrap(async (req, res) => {
   const id = req.me.telegram_id;
   const { rows: profiles } = await query(
-    `SELECT p.id, p.relation, p.label, p.birth_year, p.sex,
+    `SELECT p.id, p.relation, p.label, p.birth_year, p.sex, p.avatar, p.color,
             count(DISTINCT o.id) FILTER (WHERE EXISTS (SELECT 1 FROM lab_results r WHERE r.order_id = o.id))::int AS visits
      FROM bot_patients p LEFT JOIN bot_orders o ON o.patient_id = p.id
      WHERE p.telegram_id = $1 GROUP BY p.id ORDER BY p.id`,
@@ -135,17 +136,20 @@ router.get('/data', wrap(async (req, res) => {
 
 const RELATIONS = ['self', 'father', 'mother', 'child', 'spouse', 'other'];
 
-// Profilni qayta nomlash, jinsini belgilash
+// Profilni tahrirlash: nom, kimligi, jinsi, avatar, rang
 router.post('/profile', wrap(async (req, res) => {
   const p = await profileOf(req, String(req.body?.pid ?? ''));
   if (!p?.id) return res.status(404).json({ error: 'not_found' });
   const label = req.body?.label === undefined ? undefined : String(req.body.label).replace(/[<>]/g, '').trim().slice(0, 40);
   const sex = req.body?.sex === undefined ? undefined : ['m', 'f'].includes(req.body.sex) ? req.body.sex : null;
   const relation = RELATIONS.includes(req.body?.relation) ? req.body.relation : undefined;
+  const avatar = ALL_AVATARS.includes(req.body?.avatar) ? req.body.avatar : undefined;
+  const color = Object.hasOwn(AVATAR_COLORS, String(req.body?.color)) ? req.body.color : undefined;
   await query(
-    `UPDATE bot_patients SET label = coalesce($2, label), sex = CASE WHEN $3::boolean THEN $4 ELSE sex END, relation = coalesce($5, relation)
+    `UPDATE bot_patients SET label = coalesce($2, label), sex = CASE WHEN $3::boolean THEN $4 ELSE sex END,
+       relation = coalesce($5, relation), avatar = coalesce($6, avatar), color = coalesce($7, color)
      WHERE id = $1`,
-    [p.id, label ?? null, sex !== undefined, sex ?? null, relation ?? null],
+    [p.id, label ?? null, sex !== undefined, sex ?? null, relation ?? null, avatar ?? null, color ?? null],
   );
   res.json({ ok: true });
 }));

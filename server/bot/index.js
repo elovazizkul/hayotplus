@@ -24,6 +24,7 @@ import { renderPdf } from './pdf.js';
 import { profileName, RELATIONS, say } from './texts.js';
 import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig, tashkentHour } from './schedule.js';
 import { countRows, logParse, saveResults } from './results.js';
+import { avatarEmoji } from '../../src/data/avatars.js';
 
 const CHECK_GAP_SECONDS = 30; // bir blankni 30 soniyada bir martadan ko'p tekshirmaymiz
 const KEEP_DAYS = 30; // laboratoriya kaliti kamida shuncha kundan keyin o'chiriladi
@@ -222,20 +223,21 @@ async function askProfile(chatId, telegramId, orderId, lang, { full = false } = 
   const { rows: [o] } = await query('SELECT patient_id, birth_year FROM bot_orders WHERE id = $1 AND telegram_id = $2', [orderId, telegramId]);
   if (!o || (o.patient_id && !full)) return;
   const { rows: profiles } = await query(
-    'SELECT id, relation, label, birth_year FROM bot_patients WHERE telegram_id = $1 ORDER BY id',
+    'SELECT id, relation, label, birth_year, sex, avatar FROM bot_patients WHERE telegram_id = $1 ORDER BY id',
     [telegramId],
   );
+  const named = (p) => `${avatarEmoji(p)} ${profileName(p, lang)}`;
   await setOrder(orderId, { profile_asked_at: new Date() });
 
   // Tug'ilgan yil bitta profilga mos kelsa — taxmin qilib so'raymiz
   const guess = o.birth_year ? profiles.filter((p) => p.birth_year === o.birth_year) : [];
   if (!full && guess.length === 1) {
-    return tg.send(chatId, say('whoseGuess', lang, { who: profileName(guess[0], lang) }), [[
+    return tg.send(chatId, say('whoseGuess', lang, { who: named(guess[0]) }), [[
       { text: say('yes', lang), callback_data: `pg:${orderId}:${guess[0].id}` },
       { text: say('otherPerson', lang), callback_data: `po:${orderId}` },
     ]]);
   }
-  const existing = profiles.slice(0, 8).map((p) => [{ text: `👤 ${profileName(p, lang)}`, callback_data: `pg:${orderId}:${p.id}` }]);
+  const existing = profiles.slice(0, 8).map((p) => [{ text: named(p), callback_data: `pg:${orderId}:${p.id}` }]);
   const fresh = RELATIONS.map((rel) => ({ text: `➕ ${profileName({ relation: rel }, lang)}`, callback_data: `pn:${orderId}:${rel}` }));
   const pairs = [];
   for (let i = 0; i < fresh.length; i += 2) pairs.push(fresh.slice(i, i + 2));
