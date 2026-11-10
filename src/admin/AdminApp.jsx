@@ -23,6 +23,7 @@ const NAV = [
   { id: 'site', label: 'Sayt sozlamalari', icon: 'tune' },
   { id: 'integrations', label: 'AI, Telegram, n8n', icon: 'smart_toy' },
   { id: 'bot', label: 'Natijalar boti', icon: 'send' },
+  { id: 'lab_analytes', icon: 'science' },
   { id: 'mcp', label: 'MCP (Claude)', icon: 'hub' },
   { id: 'audit', icon: 'history' },
   { id: 'security', label: 'Parol', icon: 'lock' },

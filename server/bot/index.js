@@ -6,6 +6,8 @@
 //  (jadval — admin panelda) va tayyor bo'lishi bilan PDF ni o'zi yuboradi. Tunda yubormaydi.
 //  N kundan keyin "qolgan natijalarni operator yuboradi" deb bir marta yozadi (autsors tahlillar).
 //  Yuborilgandan keyin bir necha kun (admin panelda, standart 3) natija o'zgarmadimi kuzatadi.
+//  3-bosqich: alohida rozilik bilan raqamlar bazaga (lab_results, results.js), "Bu kimning tahlili?"
+//  (profil, tug'ilgan yil bo'yicha taxmin), /ochirish — bemor hammasini o'chiradi, 20:00 da xodimlarga hisobot.
 //  Bot Telegram'dan yangi xabarlarni o'zi so'raydi (long polling): serverda yangi manzil ochilmaydi.
 //  Bemor ismi, telefoni saqlanmaydi; laboratoriya kaliti (tmpK) bazada shifrlangan, logga yozilmaydi.
 // ============================================================
@@ -19,8 +21,9 @@ import { site } from '../../src/data/site.js';
 import { botReady } from './link.js';
 import { createTelegram } from './telegram.js';
 import { renderPdf } from './pdf.js';
-import { say } from './texts.js';
-import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig } from './schedule.js';
+import { profileName, RELATIONS, say } from './texts.js';
+import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig, tashkentHour } from './schedule.js';
+import { countRows, logParse, saveResults } from './results.js';
 
 const CHECK_GAP_SECONDS = 30; // bir blankni 30 soniyada bir martadan ko'p tekshirmaymiz
 const KEEP_DAYS = 30; // laboratoriya kaliti kamida shuncha kundan keyin o'chiriladi
@@ -119,6 +122,7 @@ async function checkOrder(chatId, order, lang, manual) {
 
   // Laboratoriya dasturi kalitni rad etdi
   if (!page) {
+    logParse(order.id, 'not_found');
     await setOrder(order.id, { next_check_at: null, status: delivered ? 'delivered' : 'failed' });
     if (manual || !delivered) await tg.send(chatId, say('notFound', lang, info));
     return;
@@ -181,6 +185,88 @@ async function checkOrder(chatId, order, lang, manual) {
   track('bot:pdf');
   if (changed) track('bot:updated');
   else if (!delivered && !manual) track('bot:auto');
+  await afterDelivery(chatId, order, page.lab, lang);
+}
+
+// ---- 3-bosqich: raqamlarni saqlash va "Bu kimning tahlili?" ----
+
+// PDF yuborilgandan keyin: rozilik bo'lsa — raqamlar bazaga, keyin profil so'raladi; rozilik so'ralmagan bo'lsa — so'raymiz
+async function afterDelivery(chatId, order, lab, lang) {
+  await setOrder(order.id, { birth_year: lab.birthYear || null });
+  const { rows: [user] } = await query('SELECT data_consent FROM bot_users WHERE telegram_id = $1', [order.telegram_id]);
+  const parsed = countRows(lab);
+  if (user?.data_consent !== true) {
+    logParse(order.id, 'ready', { parsed });
+    if (user && user.data_consent === null) {
+      await tg.send(chatId, say('dataConsent', lang), [[
+        { text: say('dataYes', lang), callback_data: `dc:y:${order.id}` },
+        { text: say('dataNo', lang), callback_data: `dc:n:${order.id}` },
+      ]]);
+    }
+    return;
+  }
+  const saved = await saveResults(order.id, lab);
+  logParse(order.id, 'ready', { parsed, saved: saved.rows, newAnalytes: saved.newAnalytes });
+  track('lab:rows', saved.rows);
+  await askProfile(chatId, order.telegram_id, order.id, lang);
+}
+
+async function askProfile(chatId, telegramId, orderId, lang, { full = false } = {}) {
+  const { rows: [o] } = await query('SELECT patient_id, birth_year FROM bot_orders WHERE id = $1 AND telegram_id = $2', [orderId, telegramId]);
+  if (!o || (o.patient_id && !full)) return;
+  const { rows: profiles } = await query(
+    'SELECT id, relation, label, birth_year FROM bot_patients WHERE telegram_id = $1 ORDER BY id',
+    [telegramId],
+  );
+  await setOrder(orderId, { profile_asked_at: new Date() });
+
+  // Tug'ilgan yil bitta profilga mos kelsa — taxmin qilib so'raymiz
+  const guess = o.birth_year ? profiles.filter((p) => p.birth_year === o.birth_year) : [];
+  if (!full && guess.length === 1) {
+    return tg.send(chatId, say('whoseGuess', lang, { who: profileName(guess[0], lang) }), [[
+      { text: say('yes', lang), callback_data: `pg:${orderId}:${guess[0].id}` },
+      { text: say('otherPerson', lang), callback_data: `po:${orderId}` },
+    ]]);
+  }
+  const existing = profiles.slice(0, 8).map((p) => [{ text: `👤 ${profileName(p, lang)}`, callback_data: `pg:${orderId}:${p.id}` }]);
+  const fresh = RELATIONS.map((rel) => ({ text: `➕ ${profileName({ relation: rel }, lang)}`, callback_data: `pn:${orderId}:${rel}` }));
+  const pairs = [];
+  for (let i = 0; i < fresh.length; i += 2) pairs.push(fresh.slice(i, i + 2));
+  const year = o.birth_year ? say('whoseYear', lang, { y: o.birth_year }) : '';
+  return tg.send(chatId, say('whose', lang, { year }), [...existing, ...pairs]);
+}
+
+// Rozilik berilgach: shu blank va avval yuborilgan blanklarning raqamlari ham saqlanadi (profil so'ralmaydi —
+// keyingi blankda yoki 4-bosqichda Mini App'da tanlanadi)
+async function importOrders(telegramId, firstOrderId) {
+  const { rows } = await query(
+    `SELECT id, lis_id, lis_key FROM bot_orders
+     WHERE telegram_id = $1 AND status = 'delivered' AND lis_key IS NOT NULL
+     ORDER BY (id = $2) DESC, id`,
+    [telegramId, firstOrderId],
+  );
+  for (const o of rows) {
+    try {
+      const ref = checkRef(o.lis_id, decrypt(o.lis_key));
+      const page = ref ? await fetchLis(ref) : null;
+      if (page?.status !== 'ready') continue;
+      const saved = await saveResults(o.id, page.lab);
+      await setOrder(o.id, { birth_year: page.lab.birthYear || null });
+      logParse(o.id, 'ready', { parsed: countRows(page.lab), saved: saved.rows, newAnalytes: saved.newAnalytes });
+      track('lab:rows', saved.rows);
+    } catch (err) {
+      console.error('Bot import:', safe(err));
+    }
+    await sleep(WORKER_GAP_MS);
+  }
+}
+
+// Bemor o'z ma'lumotlarini butunlay o'chiradi: blanklar, raqamlar (CASCADE), profillar, rozilik
+function deleteUser(telegramId) {
+  return tx(async (c) => {
+    await c.query('DELETE FROM bot_links WHERE telegram_id = $1', [telegramId]);
+    await c.query('DELETE FROM bot_users WHERE telegram_id = $1', [telegramId]);
+  });
 }
 
 // ---- Avtomatik tekshiruv: vaqti kelgan blanklar navbat bilan ----
@@ -224,6 +310,13 @@ async function worker() {
 async function onMessage(msg) {
   if (msg.chat?.type !== 'private' || !msg.from || msg.from.is_bot) return; // guruhlarda ishlamaydi
   const chatId = msg.chat.id;
+  if (/^\/(ochirish|delete)(@\w+)?$/i.test(String(msg.text || '').trim())) {
+    const lang = await langOf(msg.from);
+    return tg.send(chatId, say('deleteAsk', lang), [[
+      { text: say('deleteYes', lang), callback_data: 'del:y' },
+      { text: say('deleteNo', lang), callback_data: 'del:n' },
+    ]]);
+  }
   const start = String(msg.text || '').trim().match(/^\/start(?:@\w+)?\s+([A-Za-z0-9_-]{20,64})$/);
   if (!start) return tg.send(chatId, say('hello', await langOf(msg.from), siteInfo()));
 
@@ -256,16 +349,66 @@ async function onMessage(msg) {
 }
 
 async function onCallback(cb) {
-  const m = String(cb.data || '').match(/^(ok|no|chk):(\d{1,18})$/);
   const chat = cb.message?.chat;
-  if (!m || chat?.type !== 'private') return tg.answer(cb.id);
-  const [, action, orderId] = m;
+  const data = String(cb.data || '');
+  if (chat?.type !== 'private') return tg.answer(cb.id);
   const lang = await langOf(cb.from);
+  const done = async () => {
+    await tg.answer(cb.id);
+    await tg.removeButtons(chat.id, cb.message.message_id);
+  };
+
+  if (data === 'del:y' || data === 'del:n') {
+    await done();
+    if (data === 'del:n') return tg.send(chat.id, say('deleteCancelled', lang));
+    await deleteUser(cb.from.id);
+    track('bot:deleted');
+    return tg.send(chat.id, say('deleted', lang));
+  }
+
+  // ok:<blank> | no:<blank> | chk:<blank> | dc:y|n:<blank> | pg:<blank>:<profil> | po:<blank> | pn:<blank>:<tur>
+  const m = data.match(/^(ok|no|chk|po):(\d{1,18})$|^dc:([yn]):(\d{1,18})$|^pg:(\d{1,18}):(\d{1,18})$|^pn:(\d{1,18}):([a-z]{1,10})$/);
+  if (!m) return tg.answer(cb.id);
+  const action = m[1] || (m[3] ? `dc${m[3]}` : m[5] ? 'pg' : 'pn');
+  const orderId = m[2] || m[4] || m[5] || m[7];
 
   const { rows } = await query('SELECT id FROM bot_orders WHERE id = $1 AND telegram_id = $2', [orderId, cb.from.id]);
   if (!rows[0]) {
     await tg.answer(cb.id);
     return tg.send(chat.id, say('gone', lang, siteInfo()));
+  }
+
+  if (action === 'dcy' || action === 'dcn') {
+    await done();
+    await query('UPDATE bot_users SET data_consent = $2 WHERE telegram_id = $1', [cb.from.id, action === 'dcy']);
+    if (action === 'dcn') return tg.send(chat.id, say('dataDeclined', lang));
+    await importOrders(cb.from.id, orderId);
+    return askProfile(chat.id, cb.from.id, orderId, lang);
+  }
+  if (action === 'po') {
+    await done();
+    return askProfile(chat.id, cb.from.id, orderId, lang, { full: true });
+  }
+  if (action === 'pg' || action === 'pn') {
+    let patient;
+    if (action === 'pg') {
+      ({ rows: [patient] } = await query('SELECT id, relation, label, birth_year FROM bot_patients WHERE id = $1 AND telegram_id = $2', [m[6], cb.from.id]));
+    } else if (RELATIONS.includes(m[8])) {
+      ({ rows: [patient] } = await query(
+        `INSERT INTO bot_patients (telegram_id, relation, birth_year)
+         SELECT $1, $2, birth_year FROM bot_orders WHERE id = $3 RETURNING id, relation, label, birth_year`,
+        [cb.from.id, m[8], orderId],
+      ));
+    }
+    await done();
+    if (!patient) return null;
+    await setOrder(orderId, { patient_id: patient.id });
+    // Profilda yil bo'lmasa — shu blankdagi yil
+    await query(
+      'UPDATE bot_patients SET birth_year = o.birth_year FROM bot_orders o WHERE bot_patients.id = $1 AND bot_patients.birth_year IS NULL AND o.id = $2',
+      [patient.id, orderId],
+    );
+    return tg.send(chat.id, say('profileSaved', lang, { who: profileName(patient, lang) }));
   }
 
   if (action === 'no') {
@@ -293,11 +436,48 @@ function handle(update) {
   });
 }
 
+// ---- Kechki hisobot (20:00, Toshkent) xodimlar guruhiga — arizalar boti (@hayotpluslab_bot) orqali ----
+// Ism va raqamlar yo'q, faqat sonlar. Sahifa tuzilishi o'zgarib, parser buzilsa — ogohlantirish.
+const SUMMARY_HOUR = 20;
+const TODAY = `(now() AT TIME ZONE 'Asia/Tashkent')::date`;
+
+async function dailySummary() {
+  if (tashkentHour() !== SUMMARY_HOUR || !cfg['telegram.bot_token'] || !cfg['telegram.chat_id']) return;
+  const sent = await query(`SELECT 1 FROM daily_stats WHERE day = ${TODAY} AND metric = 'bot:summary'`);
+  if (sent.rows[0]) return;
+  const { rows: [s] } = await query(
+    `SELECT
+       (SELECT coalesce(sum(count), 0) FROM daily_stats WHERE day = ${TODAY} AND metric = 'bot:pdf')::int AS pdf,
+       (SELECT coalesce(sum(count), 0) FROM daily_stats WHERE day = ${TODAY} AND metric = 'bot:auto')::int AS auto,
+       count(*) FILTER (WHERE outcome = 'ready')::int AS ready,
+       count(*) FILTER (WHERE outcome = 'not_found')::int AS not_found,
+       coalesce(sum(rows_saved), 0)::int AS saved,
+       coalesce(sum(new_analytes), 0)::int AS new_analytes,
+       (SELECT count(*) FROM bot_orders WHERE status = 'pending' AND next_check_at IS NOT NULL)::int AS waiting
+     FROM parse_log WHERE (created_at AT TIME ZONE 'Asia/Tashkent')::date = ${TODAY}`,
+  );
+  track('bot:summary'); // bugun qayta yuborilmasin
+  if (!s.pdf && !s.ready && !s.not_found) return; // voqea bo'lmagan kun — jim
+  const lines = [
+    `📊 Natijalar boti — bugungi hisobot`,
+    `PDF yuborildi: ${s.pdf} (shundan avtomatik: ${s.auto})`,
+    `Raqamlar saqlandi: ${s.saved} qator`,
+    `Yangi koʻrsatkich nomlari: ${s.new_analytes}${s.new_analytes ? ' — admin panel → Tahlil koʻrsatkichlari' : ''}`,
+    `«Topilmadi» javobi: ${s.not_found}`,
+    `Botda kutilmoqda: ${s.waiting}`,
+  ];
+  if (s.not_found >= 3 && s.not_found > s.ready) {
+    lines.push('', '⚠️ «Topilmadi» juda koʻp: laboratoriya dasturi sahifasi oʻzgargan boʻlishi mumkin. Dasturchiga xabar bering.');
+  }
+  await createTelegram(cfg['telegram.bot_token']).send(cfg['telegram.chat_id'], lines.join('\n'));
+}
+
 // Eskirgan bir martalik kalitlar va eski laboratoriya kalitlari o'chiriladi
 async function purge() {
   const s = scheduleConfig(cfg);
   const keepDays = Math.max(KEEP_DAYS, s.maxDays, s.watchDays);
   await query("DELETE FROM bot_links WHERE expires_at < now() - interval '1 day'");
+  await query("DELETE FROM parse_log WHERE created_at < now() - interval '90 days'");
   await query(
     `UPDATE bot_orders SET lis_key = NULL, next_check_at = NULL
      WHERE lis_key IS NOT NULL AND coalesce(delivered_at, created_at) < now() - make_interval(days => $1)`,
@@ -309,7 +489,7 @@ async function purge() {
 async function waitForTables() {
   for (;;) {
     try {
-      await query('SELECT next_check_at FROM bot_orders LIMIT 1');
+      await query('SELECT birth_year FROM bot_orders LIMIT 1');
       return;
     } catch {
       console.log('Bot: baza hali tayyor emas, kutilmoqda...');
@@ -325,6 +505,7 @@ async function main() {
   await runPurge();
   setInterval(runPurge, 12 * 3600000).unref();
   setInterval(worker, WORKER_EVERY_MS).unref();
+  setInterval(() => dailySummary().catch((err) => console.error('Bot summary:', safe(err))), 5 * 60000).unref();
 
   let token = '';
   let offset = 0;
@@ -345,6 +526,9 @@ async function main() {
         const next = createTelegram(cfg['bot.token']);
         const me = await next.getMe();
         await next.call('deleteWebhook');
+        // Telegram'dagi "Menu" tugmasida: ma'lumotlarni o'chirish
+        await next.call('setMyCommands', { commands: [{ command: 'ochirish', description: 'Maʼlumotlarimni oʻchirish' }] }).catch(() => {});
+        await next.call('setMyCommands', { commands: [{ command: 'ochirish', description: 'Удалить мои данные' }], language_code: 'ru' }).catch(() => {});
         tg = next;
         token = cfg['bot.token'];
         offset = 0;

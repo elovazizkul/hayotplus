@@ -62,6 +62,7 @@ export function parseResultsHtml(html) {
     number,
     date,
     age: birthYear && testYear >= birthYear ? testYear - birthYear : null,
+    birthYear, // faqat bot uchun (profilni taxmin qilish); saytga yuborilmaydi
     groups: groups.slice(0, 50),
   };
 }

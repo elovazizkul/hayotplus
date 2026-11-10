@@ -262,6 +262,28 @@ export const resources = {
     ],
   },
 
+  // Natijalar boti blanklaridan avtomatik to'ladi (laboratoriya dasturidagi nom bo'yicha). Bemor ma'lumoti yo'q.
+  lab_analytes: {
+    label: 'Tahlil koʻrsatkichlari (bot)',
+    ops: ['list', 'get', 'update'],
+    numericId: true,
+    sort: 'last_seen',
+    dir: 'desc',
+    search: ['lis_name', 'name_uz', 'name_ru', 'group_title'],
+    fields: [
+      { name: 'id', label: '№', type: 'int', readOnly: true, list: true },
+      { name: 'lis_name', label: 'Laboratoriya dasturidagi nomi', type: 'text', readOnly: true, list: true },
+      { name: 'group_title', label: 'Guruh', type: 'text', readOnly: true, list: true },
+      ...lang('name', 'Grafik uchun qisqa nomi', { list: true }),
+      { name: 'unit', label: 'Birlik', type: 'text', readOnly: true, list: true },
+      { name: 'outsourced', label: 'Autsors — natijani operator yuboradi', type: 'bool', default: false, list: true, filter: true },
+      { name: 'merged_into', label: 'Shu № koʻrsatkich bilan bir xil (0 — yoʻq)', type: 'int', default: 0, min: 0 },
+      { name: 'seen_count', label: 'Necha marta uchradi', type: 'int', readOnly: true, list: true },
+      { name: 'first_seen', label: 'Birinchi marta', type: 'datetime', readOnly: true, filter: true },
+      { name: 'last_seen', label: 'Oxirgi marta', type: 'datetime', readOnly: true, list: true },
+    ],
+  },
+
   audit: {
     label: 'Oʻzgarishlar tarixi',
     table: 'audit_log',

@@ -97,7 +97,8 @@ router.post('/results', rateLimit({ windowMs: 60000, max: 20 }), wrap(async (req
   }
   track('results:ok');
   const interpretEnabled = cfg['interpret.enabled'] === 'true' && Boolean(cfg['interpret.webhook_url'] && cfg['interpret.token']);
-  res.json({ ...page.lab, interpretEnabled, botEnabled: botReady(cfg) });
+  const { birthYear: _birthYear, ...lab } = page.lab; // tug'ilgan yil brauzerga kerak emas
+  res.json({ ...lab, interpretEnabled, botEnabled: botReady(cfg) });
 }));
 
 router.post('/interpret', rateLimit({ windowMs: 10 * 60000, max: 10 }), wrap(async (req, res) => {

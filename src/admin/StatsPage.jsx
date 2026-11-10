@@ -17,6 +17,8 @@ const CARDS = [
   { id: 'botAuto', label: 'Bot: PDF avtomatik yuborildi', hint: 'Natija tayyor boʻlishi bilan bot oʻzi yubordi', metrics: ['bot:auto'] },
   { id: 'botUpdated', label: 'Bot: natijalar yangilandi', hint: 'Yuborilgandan keyin natija toʻldirildi — yangi PDF ketdi', metrics: ['bot:updated'] },
   { id: 'botOperator', label: 'Bot: “operator yuboradi” deb yozildi', hint: 'N kun ichida natija chiqmadi (autsors)', metrics: ['bot:operator'] },
+  { id: 'labRows', label: 'Bot: raqamlar saqlandi (qator)', hint: 'Bemor roziligi bilan grafik uchun saqlangan koʻrsatkichlar', metrics: ['lab:rows'] },
+  { id: 'botDeleted', label: 'Bot: maʼlumotlarini oʻchirganlar', hint: '/ochirish buyrugʻi', metrics: ['bot:deleted'] },
   { id: 'botPending', label: 'Bot: hali tayyor emas', hint: 'Bemor botda oʻzi tekshirdi, natija hali yoʻq', metrics: ['bot:pending'] },
   { id: 'errors', label: 'Muammolar', hint: 'AI xatosi, kunlik chegara, topilmagan natija, bot xatosi', metrics: ['ai:error', 'ai:limit', 'results:notfound', 'bot:error'] },
 ];
