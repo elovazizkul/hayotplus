@@ -3,6 +3,7 @@
 // ============================================================
 //  - tayyor saytni beradi (dist/) va bazadagi ma'lumotni unga qo'shadi
 //  - /api/chat, /api/lead, /api/results, /api/interpret, /api/bot-link — sayt uchun
+//  - /app + /api/app/* — Telegram Mini App "Mening tahlillarim" (server/bot/app-api.js)
 //  - natijalar boti alohida jarayon: server/bot/index.js (docker-compose: bot)
 //  - /api/admin/* — admin panel, /mcp — Claude uchun
 //  Kerakli sozlamalar: DATABASE_URL, APP_SECRET, ADMIN_PASSWORD (.env.example)
@@ -21,6 +22,7 @@ import admin from './admin.js';
 import mcp from './mcp.js';
 import interpret, { purgeOldInterpretations } from './interpret.js';
 import botLink from './bot/link.js';
+import miniApp from './bot/app-api.js';
 import { purgeVisitMarks, trackVisit } from './stats.js';
 import { handleChat } from '../api/chat.js';
 import { handleLead } from '../api/lead.js';
@@ -112,6 +114,7 @@ app.post('/api/lead', rateLimit({ windowMs: 60000, max: 10 }), json, async (req,
 
 app.use('/api', json, interpret);
 app.use('/api', json, botLink);
+app.use('/api/app', json, miniApp); // Telegram Mini App "Mening tahlillarim"
 
 app.use('/api/admin', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -150,7 +153,12 @@ app.get('*', (req, res) => {
   if (/\.[a-z0-9]+$/i.test(req.path)) return res.status(404).end('Not found');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  if (req.path.startsWith('/admin') || req.path.startsWith('/natija')) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  if (req.path.startsWith('/admin') || req.path.startsWith('/natija') || req.path.startsWith('/app')) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  // Mini App Telegram ichida ochiladi (Telegram Web/Desktop'da — iframe ichida): faqat Telegram'ga ruxsat
+  if (/^\/app\/?$/.test(req.path)) {
+    res.removeHeader('X-Frame-Options');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org");
+  }
   if (req.path === '/') trackVisit(req, 'home');
   else if (/^\/natija\/?$/.test(req.path)) trackVisit(req, 'natija');
   res.end(renderIndex());

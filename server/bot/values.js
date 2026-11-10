@@ -29,6 +29,26 @@ export function parseRef(text) {
   return none;
 }
 
+// Jinsga qarab me'yor: "Муж ( male ) < 42 Жен ( Female ) < 32" + 'f' → {high: 32}. Jins noma'lum — raqamsiz.
+const MALE = /муж|male|erkak/i;
+const FEMALE = /жен|female|ayol/i;
+export function parseRefForSex(text, sex) {
+  const s = squash(text);
+  const plain = parseRef(s);
+  if (plain.low !== null || plain.high !== null || !(MALE.test(s) && FEMALE.test(s))) return plain;
+  if (sex !== 'm' && sex !== 'f') return { low: null, high: null };
+  // "female" ichida "male" bor — avval ayol qismini ajratamiz
+  const f = s.search(FEMALE);
+  const m = s.replace(new RegExp(FEMALE.source, 'gi'), (x) => ' '.repeat(x.length)).search(MALE);
+  if (f < 0 || m < 0) return { low: null, high: null };
+  const [start, end] = sex === 'f' ? [f, m > f ? m : s.length] : [m, f > m ? f : s.length];
+  const part = s
+    .slice(start, end)
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/муж\w*|жен\w*|female|male|erkak|ayol|[:.]/gi, ' ');
+  return parseRef(part);
+}
+
 // "09.11.2026" → "2026-11-09"
 export function isoDate(ddmmyyyy) {
   const m = String(ddmmyyyy ?? '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);

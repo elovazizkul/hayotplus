@@ -27,6 +27,8 @@ const AdminApp = lazy(() => import('./admin/AdminApp.jsx'));
 const ResultPage = lazy(() => import('./result/ResultPage.jsx'));
 const isAdmin = /^\/admin(\/|$)/.test(window.location.pathname);
 const isResult = /^\/natija\/?$/.test(window.location.pathname);
+const MiniApp = lazy(() => import('./miniapp/MiniApp.jsx'));
+const isMiniApp = /^\/app\/?$/.test(window.location.pathname); // Telegram Mini App "Mening tahlillarim"
 
 function CrashScreen() {
   return (
@@ -48,6 +50,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       {isAdmin ? (
         <Suspense fallback={null}>
           <AdminApp />
+        </Suspense>
+      ) : isMiniApp ? (
+        <Suspense fallback={null}>
+          <MiniApp />
         </Suspense>
       ) : (
         <LangProvider>

@@ -42,10 +42,17 @@ const safe = (err) => String(err?.message || err).replace(/tmpK=[^&\s"']+/g, 'tm
 let cfg = {};
 let tg = null;
 
-function siteInfo() {
+function siteBase() {
   const raw = String(cfg['site.url'] || site.url || 'hayotplus.uz').trim().replace(/\/+$/, '');
-  return { phone: cfg['site.phone'] || site.phone, site: `${/^https?:\/\//.test(raw) ? raw : `https://${raw}`}/natija` };
+  return /^https?:\/\//.test(raw) ? raw.replace(/^http:/, 'https:') : `https://${raw}`;
 }
+
+function siteInfo() {
+  return { phone: cfg['site.phone'] || site.phone, site: `${siteBase()}/natija` };
+}
+
+// Mini App tugmasi (PDF ostida va bot menyusida)
+const appButton = (lang) => [[{ text: say('openApp', lang), web_app: { url: `${siteBase()}/app` } }]];
 
 async function langOf(from) {
   const { rows } = await query('SELECT lang FROM bot_users WHERE telegram_id = $1', [from.id]);
@@ -173,7 +180,7 @@ async function checkOrder(chatId, order, lang, manual) {
   const n = page.lab.number || ref.id;
   const head = changed ? say('updated', lang) : !delivered && !manual ? say('readyAuto', lang) : '';
   const caption = head + say('caption', lang, { n, d: page.lab.date ? say('date', lang, { d: page.lab.date }) : '', phone: info.phone });
-  await tg.sendPdf(chatId, pdf, `HayotPlus-${n}.pdf`, caption);
+  await tg.sendPdf(chatId, pdf, `HayotPlus-${n}.pdf`, caption, appButton(lang));
 
   const deliveredAt = order.delivered_at || new Date();
   await setOrder(order.id, {
@@ -258,6 +265,61 @@ async function importOrders(telegramId, firstOrderId) {
       console.error('Bot import:', safe(err));
     }
     await sleep(WORKER_GAP_MS);
+  }
+}
+
+// ---- 4-bosqich: Mini App'dan kelgan topshiriqlar (bot_jobs) ----
+
+// Blank PDF ini chatga qayta yuborish (holatni o'zgartirmaydi, savol bermaydi)
+async function sendBlank(job) {
+  const { rows: [o] } = await query(
+    'SELECT o.id, o.lis_id, o.lis_key, u.lang FROM bot_orders o JOIN bot_users u USING (telegram_id) WHERE o.id = $1 AND o.telegram_id = $2',
+    [job.order_id, job.telegram_id],
+  );
+  if (!o) return;
+  const chatId = job.telegram_id;
+  const info = siteInfo();
+  let ref = null;
+  try {
+    ref = o.lis_key ? checkRef(o.lis_id, decrypt(o.lis_key)) : null;
+  } catch {
+    ref = null;
+  }
+  if (!ref) return tg.send(chatId, say('gone', o.lang, info));
+  await tg.typing(chatId);
+  const page = await fetchLis(ref).catch(() => undefined);
+  if (page === undefined) return tg.send(chatId, say('lisLater', o.lang));
+  if (page?.status !== 'ready') return tg.send(chatId, say('notFound', o.lang, info));
+  const pdf = await renderPdf(page.html);
+  const n = page.lab.number || ref.id;
+  const caption = say('caption', o.lang, { n, d: page.lab.date ? say('date', o.lang, { d: page.lab.date }) : '', phone: info.phone });
+  await tg.sendPdf(chatId, pdf, `HayotPlus-${n}.pdf`, caption);
+  track('bot:pdf');
+}
+
+let jobsBusy = false;
+async function runJobs() {
+  if (jobsBusy || !tg || !botReady(cfg)) return;
+  jobsBusy = true;
+  try {
+    const { rows } = await query(
+      `UPDATE bot_jobs SET done_at = now()
+       WHERE id IN (SELECT id FROM bot_jobs WHERE done_at IS NULL ORDER BY id LIMIT 5 FOR UPDATE SKIP LOCKED)
+       RETURNING id, kind, telegram_id, order_id`,
+    );
+    for (const job of rows) {
+      try {
+        if (job.kind === 'send_pdf') await sendBlank(job);
+        else if (job.kind === 'import') await importOrders(job.telegram_id, 0);
+      } catch (err) {
+        console.error('Bot job:', safe(err));
+        await query('UPDATE bot_jobs SET error = $2 WHERE id = $1', [job.id, safe(err).slice(0, 200)]).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error('Bot jobs:', safe(err));
+  } finally {
+    jobsBusy = false;
   }
 }
 
@@ -478,6 +540,7 @@ async function purge() {
   const keepDays = Math.max(KEEP_DAYS, s.maxDays, s.watchDays);
   await query("DELETE FROM bot_links WHERE expires_at < now() - interval '1 day'");
   await query("DELETE FROM parse_log WHERE created_at < now() - interval '90 days'");
+  await query("DELETE FROM bot_jobs WHERE created_at < now() - interval '7 days'");
   await query(
     `UPDATE bot_orders SET lis_key = NULL, next_check_at = NULL
      WHERE lis_key IS NOT NULL AND coalesce(delivered_at, created_at) < now() - make_interval(days => $1)`,
@@ -489,7 +552,7 @@ async function purge() {
 async function waitForTables() {
   for (;;) {
     try {
-      await query('SELECT birth_year FROM bot_orders LIMIT 1');
+      await query('SELECT 1 FROM bot_jobs LIMIT 1');
       return;
     } catch {
       console.log('Bot: baza hali tayyor emas, kutilmoqda...');
@@ -505,6 +568,7 @@ async function main() {
   await runPurge();
   setInterval(runPurge, 12 * 3600000).unref();
   setInterval(worker, WORKER_EVERY_MS).unref();
+  setInterval(runJobs, 3000).unref();
   setInterval(() => dailySummary().catch((err) => console.error('Bot summary:', safe(err))), 5 * 60000).unref();
 
   let token = '';
@@ -529,6 +593,10 @@ async function main() {
         // Telegram'dagi "Menu" tugmasida: ma'lumotlarni o'chirish
         await next.call('setMyCommands', { commands: [{ command: 'ochirish', description: 'Maʼlumotlarimni oʻchirish' }] }).catch(() => {});
         await next.call('setMyCommands', { commands: [{ command: 'ochirish', description: 'Удалить мои данные' }], language_code: 'ru' }).catch(() => {});
+        // Chat pastidagi tugma: Mini App "Mening tahlillarim"
+        await next.call('setChatMenuButton', {
+          menu_button: { type: 'web_app', text: '📊 Tahlillarim', web_app: { url: `${siteBase()}/app` } },
+        }).catch((err) => console.error('Bot menu:', safe(err)));
         tg = next;
         token = cfg['bot.token'];
         offset = 0;

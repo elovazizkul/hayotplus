@@ -42,10 +42,11 @@ export function createTelegram(token) {
     answer: (callbackId, text) => call('answerCallbackQuery', { callback_query_id: callbackId, ...(text ? { text } : {}) }).catch(() => {}),
     removeButtons: (chatId, messageId) =>
       call('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }).catch(() => {}),
-    sendPdf: (chatId, buffer, filename, caption) => {
+    sendPdf: (chatId, buffer, filename, caption, buttons) => {
       const form = new FormData();
       form.append('chat_id', String(chatId));
       form.append('caption', caption);
+      if (buttons) form.append('reply_markup', JSON.stringify({ inline_keyboard: buttons }));
       form.append('document', new Blob([buffer], { type: 'application/pdf' }), filename);
       return call('sendDocument', form, { timeoutMs: 60000 });
     },

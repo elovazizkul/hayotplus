@@ -34,6 +34,11 @@ export const T = {
     uz: 'Barcha maʼlumotlaringiz oʻchirildi. Bot sizga boshqa hech narsa yubormaydi.',
     ru: 'Все ваши данные удалены. Бот больше ничего вам не пришлёт.',
   },
+  openApp: { uz: '📊 Mening tahlillarim', ru: '📊 Мои анализы' },
+  lisLater: {
+    uz: 'Laboratoriya dasturi hozir javob bermayapti. Birozdan keyin qayta urinib koʻring.',
+    ru: 'Лабораторная программа сейчас не отвечает. Попробуйте чуть позже.',
+  },
   deleteCancelled: { uz: 'Bekor qilindi, hech narsa oʻchirilmadi.', ru: 'Отменено, ничего не удалено.' },
   expired: {
     uz: 'Bu havola eskirgan yoki allaqachon ishlatilgan (havola 15 daqiqa amal qiladi).\n\nSaytda QR-kodni qayta skanerlang va «Telegram’ga yuborish» tugmasini yana bosing:\n{site}',
