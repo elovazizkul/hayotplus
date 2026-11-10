@@ -110,9 +110,10 @@ router.get('/data', wrap(async (req, res) => {
   const watchRow = new Map(favs.map((f) => [Number(f.analyte_id), f.off]));
   const watched = (aid, auto) => (watchRow.has(aid) ? !watchRow.get(aid) : Boolean(auto && p.id));
   const { rows: rems } = p.id
-    ? await query('SELECT analyte_id, off FROM patient_reminders WHERE patient_id = $1', [p.id])
+    ? await query('SELECT analyte_id, off, months FROM patient_reminders WHERE patient_id = $1', [p.id])
     : { rows: [] };
   const remOff = new Set(rems.filter((r) => r.off).map((r) => Number(r.analyte_id)));
+  const remOwn = new Map(rems.filter((r) => r.months).map((r) => [Number(r.analyte_id), r.months]));
   const { rows: tgts } = p.id
     ? await query('SELECT analyte_id, low::float8 AS low, high::float8 AS high FROM patient_targets WHERE patient_id = $1', [p.id])
     : { rows: [] };
@@ -126,7 +127,9 @@ router.get('/data', wrap(async (req, res) => {
       analytes.set(aid, {
         aid, lis_name: r.lis_name, name_uz: r.name_uz, name_ru: r.name_ru, group: r.group_title,
         unit: r.c_unit || r.unit, favorite: watched(aid, r.auto_watch), points: [],
-        remindMonths: r.remind_months || 0, reminderOff: remOff.has(aid), target: target.get(aid) || null, isKey: r.is_key === true,
+        // remindLab — laboratoriya tavsiyasi, remindOwn — bemor o'zi tanlagan muddat (bo'lsa, u ishlaydi)
+        remindLab: r.remind_months || 0, remindOwn: remOwn.get(aid) || 0,
+        remindMonths: remOwn.get(aid) || r.remind_months || 0, reminderOff: remOff.has(aid), target: target.get(aid) || null, isKey: r.is_key === true,
       });
     }
     // Me'yor: blankdagi oddiy oraliq yoki profil jinsi bo'yicha ("Муж < 42, Жен < 32")
@@ -188,15 +191,22 @@ router.post('/favorite', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-// Qayta topshirish eslatmasini yoqish / o'chirish (profil x ko'rsatkich)
+// Qayta topshirish eslatmasi (profil x ko'rsatkich): yoqish / o'chirish va muddatni bemor o'zi tanlashi.
+// months: 1–36 — o'z muddati, null — laboratoriya tavsiyasiga qaytish, yuborilmasa — o'zgarmaydi.
 router.post('/reminder', wrap(async (req, res) => {
   const p = await profileOf(req, String(req.body?.pid ?? ''));
   const aid = String(req.body?.aid ?? '');
   if (!p?.id || !isId(aid)) return res.status(404).json({ error: 'not_found' });
+  const hasMonths = req.body && Object.hasOwn(req.body, 'months');
+  const months = hasMonths && req.body.months !== null ? Number(req.body.months) : null;
+  if (hasMonths && months !== null && !(Number.isInteger(months) && months >= 1 && months <= 36)) {
+    return res.status(400).json({ error: 'bad_months' });
+  }
   await query(
-    `INSERT INTO patient_reminders (patient_id, analyte_id, off) SELECT $1, id, $3 FROM lab_analytes WHERE id = $2
-     ON CONFLICT (patient_id, analyte_id) DO UPDATE SET off = EXCLUDED.off, updated_at = now()`,
-    [p.id, aid, req.body?.on !== true],
+    `INSERT INTO patient_reminders (patient_id, analyte_id, off, months) SELECT $1, id, $3, $5 FROM lab_analytes WHERE id = $2
+     ON CONFLICT (patient_id, analyte_id) DO UPDATE SET off = EXCLUDED.off,
+       months = CASE WHEN $4::boolean THEN EXCLUDED.months ELSE patient_reminders.months END, updated_at = now()`,
+    [p.id, aid, req.body?.on !== true, hasMonths, months],
   );
   res.json({ ok: true });
 }));

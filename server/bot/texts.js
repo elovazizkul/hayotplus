@@ -45,11 +45,11 @@ export const T = {
     uz: '🔔 Qayta topshirish vaqti keldi — {who}\n\n{list}\n\nShifokoringiz boshqacha aytgan boʻlsa — unga amal qiling.\nSavollar: {phone}',
     ru: '🔔 Пора пересдать анализ — {who}\n\n{list}\n\nЕсли ваш врач советовал иначе — следуйте его рекомендации.\nВопросы: {phone}',
   },
-  remindLine: { uz: '• {name} — oxirgi marta {d} da (tavsiya: har {m} oyda)', ru: '• {name} — последний раз {d} (рекомендуется каждые {m} мес.)' },
+  remindLine: { uz: '• {name} — oxirgi marta {d} da (har {m} oyda)', ru: '• {name} — последний раз {d} (каждые {m} мес.)' },
   remindOffBtn: { uz: '🔕 Bu eslatmani oʻchirish', ru: '🔕 Отключить это напоминание' },
   remindOff: {
-    uz: 'Eslatma oʻchirildi. Uni «📊 Mening tahlillarim» da, koʻrsatkich grafigi ostida qayta yoqish mumkin.',
-    ru: 'Напоминание отключено. Включить снова можно в «📊 Мои анализы», под графиком показателя.',
+    uz: 'Eslatma oʻchirildi. Uni «📊 Mening tahlillarim» → «Eslatmalar» da qayta yoqish yoki muddatini oʻzgartirish mumkin.',
+    ru: 'Напоминание отключено. Включить снова или изменить срок можно в «📊 Мои анализы» → «Напоминания».',
   },
   reportCaption: {
     uz: '🩺 Tahlillar dinamikasi — {who}\nShifokorga koʻrsatish uchun.\n\n⚠️ Sinov rejimi: maʼlumotlarni asl (qogʻoz) blanklar bilan solishtiring. Farq boʻlsa, asl blank toʻgʻri hisoblanadi. Bu tibbiy hujjat emas.',

@@ -330,15 +330,15 @@ async function sendReminders() {
        WHERE o.patient_id IS NOT NULL
        GROUP BY 1, 2, 3)
      SELECT l.telegram_id, l.patient_id, l.aid, to_char(l.last_day, 'DD.MM.YYYY') AS last_txt, l.last_day,
-            c.remind_months, c.lis_name, c.name_uz, c.name_ru, u.lang,
+            coalesce(pr.months, c.remind_months) AS remind_months, c.lis_name, c.name_uz, c.name_ru, u.lang,
             p.relation, p.label, p.birth_year, p.sex, p.avatar
      FROM last l
      JOIN lab_analytes c ON c.id = l.aid
      JOIN bot_users u ON u.telegram_id = l.telegram_id AND u.data_consent = true
      JOIN bot_patients p ON p.id = l.patient_id
      LEFT JOIN patient_reminders pr ON pr.patient_id = l.patient_id AND pr.analyte_id = l.aid
-     WHERE c.remind_months > 0
-       AND l.last_day + make_interval(months => c.remind_months) <= ${TODAY}
+     WHERE coalesce(pr.months, c.remind_months) > 0  -- bemor o'zi tanlagan muddat yoki laboratoriya tavsiyasi
+       AND l.last_day + make_interval(months => coalesce(pr.months, c.remind_months)) <= ${TODAY}
        AND coalesce(pr.off, false) = false
        AND (pr.last_sent_for IS NULL OR pr.last_sent_for < l.last_day)
      ORDER BY l.patient_id, c.lis_name`,

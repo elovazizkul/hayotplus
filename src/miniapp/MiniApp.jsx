@@ -299,7 +299,10 @@ export default function MiniApp() {
   if (!me) return shell(<p className="p-6 text-center">{t('loading')}</p>);
 
   const visitOf = (id) => data?.visits.find((v) => v.id === id);
-  const TITLES = { charts: 'tCharts', visits: 'tVisits', favs: 'tFavs', watchAdd: 'watchAddTitle', reminders: 'tRem', profile: 'tProfile', report: 'reportTitle' };
+  const TITLES = {
+    charts: 'tCharts', visits: 'tVisits', favs: 'tFavs', watchAdd: 'watchAddTitle', reminders: 'tRem',
+    remAdd: 'remAddTitle', remEdit: 'remEditTitle', profile: 'tProfile', report: 'reportTitle',
+  };
   const title = screen.name === 'home' ? t('hello')
     : screen.name === 'chart' ? analyteName(data?.analytes.find((a) => a.aid === screen.aid) || {}, lang)
       : screen.name === 'visit' ? fmtDay(visitOf(screen.id)?.day) : t(TITLES[screen.name] || 'title');
@@ -415,12 +418,14 @@ export default function MiniApp() {
             ? <Chart points={a.points} target={a.target} normLabel={a.target ? `${t('norm')} · ${t('goalLine')}` : t('norm')} />
             : <p className="text-[14px]">{t('noNumbers')}</p>}
         </div>
-        {current.id !== 'none' && a.remindMonths > 0 && (
+        {current.id !== 'none' && (
           <div className={`${card} flex items-center justify-between gap-3`} style={cardStyle}>
-            <span className="text-[14px]">{t(a.reminderOff ? 'remindOff' : 'remindOn', { m: a.remindMonths })}</span>
+            <span className="text-[14px]">
+              {a.remindMonths > 0 ? t(a.reminderOff ? 'remindOff' : 'remindOn', { m: a.remindMonths }) : t('remNone')}
+            </span>
             <button type="button" className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-semibold" style={{ border: '1px solid var(--hp-line)', color: 'var(--hp-primary)' }}
-              onClick={async () => { await api('/reminder', { pid: current.id, aid: a.aid, on: a.reminderOff }); await loadData(pid); }}>
-              {t(a.reminderOff ? 'turnOn' : 'turnOff')}
+              onClick={() => go({ name: 'remEdit', aid: a.aid })}>
+              {a.remindMonths > 0 ? t('remSet') : t('remCreate')}
             </button>
           </div>
         )}
@@ -560,31 +565,93 @@ export default function MiniApp() {
   }
 
   // ---------- Eslatmalar ----------
+  // Eslatmalar: bemor o'zi qo'yadi — kim uchun (profil), qaysi tahlil, necha oyda; laboratoriya tavsiyasi ⭐
   if (screen.name === 'reminders') {
     const today = todayIso();
     const list = data.analytes.filter((a) => a.remindMonths > 0).sort(byName);
+    const smallBtn = { border: '1px solid var(--hp-line)', color: 'var(--hp-primary)' };
     return page(
-      list.length ? listCard(list.map((a) => {
-        const last = latest(a).day;
-        const next = addMonths(last, a.remindMonths);
-        const due = next <= today;
-        return (
-          <div key={a.aid} className="flex items-center justify-between gap-3 py-3" style={{ borderTop: '1px solid var(--hp-line)' }}>
-            <button type="button" className="min-w-0 text-left" onClick={() => go({ name: 'chart', aid: a.aid })}>
-              <span className="block text-[15px]">{a.reminderOff ? '🔕 ' : '🔔 '}{analyteName(a, lang)}</span>
-              <span className="block text-[12px]" style={{ color: 'var(--hp-muted)' }}>{t('remEvery', { m: a.remindMonths })} · {t('remLast', { d: fmtDay(last) })}</span>
-              <span className="block text-[12px] font-semibold" style={{ color: due && !a.reminderOff ? 'var(--hp-bad)' : 'var(--hp-ok)' }}>
-                {due ? t('remDue') : t('remNext', { d: fmtDay(next) })}
-              </span>
-            </button>
-            <button type="button" className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-semibold" style={{ border: '1px solid var(--hp-line)', color: 'var(--hp-primary)' }}
-              onClick={async () => { await api('/reminder', { pid: current.id, aid: a.aid, on: a.reminderOff }); await loadData(pid); }}>
-              {t(a.reminderOff ? 'turnOn' : 'turnOff')}
-            </button>
+      <>
+        {profiles.length > 1 && (
+          <div className={`${card} space-y-2`} style={cardStyle}>
+            <p className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('remFor')}</p>
+            <div className="flex flex-wrap gap-2">
+              {profiles.map((p) => (
+                <button key={p.id} type="button" onClick={() => setPid(p.id)} className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[14px] font-semibold"
+                  style={pid === p.id ? { background: 'var(--hp-primary)', color: 'var(--hp-on-primary)' } : { background: 'var(--hp-bg)', border: '1px solid var(--hp-line)' }}>
+                  <Avatar p={p} size={26} dark={dark} />
+                  {nameOf(p)}
+                </button>
+              ))}
+            </div>
           </div>
-        );
-      })) : <div className={card} style={cardStyle}><p className="text-[14px]">{t('remEmpty')}</p></div>,
+        )}
+        <div className={card} style={{ background: 'var(--hp-soft)', color: 'var(--hp-on-soft)' }}><p className="text-[13px] leading-relaxed">{t('remHelp')}</p></div>
+        {list.length ? listCard(list.map((a) => {
+          const last = latest(a).day;
+          const next = addMonths(last, a.remindMonths);
+          const due = next <= today;
+          return (
+            <div key={a.aid} className="flex items-center justify-between gap-3 py-3" style={{ borderTop: '1px solid var(--hp-line)' }}>
+              <button type="button" className="min-w-0 text-left" onClick={() => go({ name: 'remEdit', aid: a.aid })}>
+                <span className="block text-[15px]">{a.reminderOff ? '🔕 ' : '🔔 '}{analyteName(a, lang)}</span>
+                <span className="block text-[12px]" style={{ color: 'var(--hp-muted)' }}>
+                  {t('remEvery', { m: a.remindMonths })}{!a.remindOwn && a.remindLab ? ` ⭐ ${t('remLabTag')}` : ''} · {t('remLast', { d: fmtDay(last) })}
+                </span>
+                {!a.reminderOff && (
+                  <span className="block text-[12px] font-semibold" style={{ color: due ? 'var(--hp-bad)' : 'var(--hp-ok)' }}>
+                    {due ? t('remDue') : t('remNext', { d: fmtDay(next) })}
+                  </span>
+                )}
+              </button>
+              <button type="button" className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-semibold" style={smallBtn} onClick={() => go({ name: 'remEdit', aid: a.aid })}>
+                {t('remSet')}
+              </button>
+            </div>
+          );
+        })) : <div className={card} style={cardStyle}><p className="text-[14px]">{t('remEmpty')}</p></div>}
+        <Button onClick={() => go({ name: 'remAdd' })}>{t('remAdd')}</Button>
+      </>,
     );
+  }
+
+  // Eslatma qo'shish: shu profilning eslatmasi yo'q tahlillari
+  if (screen.name === 'remAdd') {
+    const free = data.analytes.filter((a) => !(a.remindMonths > 0)).sort(byName);
+    return page(
+      !data.analytes.length ? <div className={card} style={cardStyle}><p className="text-[14px]">{t('remNoAnalytes')}</p></div>
+        : !free.length ? <div className={card} style={cardStyle}><p className="text-[14px]">{t('remAllSet')}</p></div>
+          : (
+            <>
+              <p className="px-1 text-[14px] font-semibold">{t('remPick')}</p>
+              {listCard(free.map((a) => (
+                <button key={a.aid} type="button" onClick={() => go({ name: 'remEdit', aid: a.aid })} className="flex w-full items-center justify-between gap-3 py-3 text-left" style={{ borderTop: '1px solid var(--hp-line)' }}>
+                  <span className="min-w-0">
+                    <span className="block text-[15px]">{analyteName(a, lang)}</span>
+                    <span className="block text-[12px]" style={{ color: 'var(--hp-muted)' }}>{t('remLast', { d: fmtDay(latest(a).day) })}</span>
+                  </span>
+                  <Icon name="chevron_right" size={18} className="shrink-0 opacity-50" />
+                </button>
+              )))}
+            </>
+          ),
+    );
+  }
+
+  if (screen.name === 'remEdit') {
+    const a = data.analytes.find((x) => x.aid === screen.aid);
+    if (!a || current.id === 'none') return shell(<>{header}</>);
+    const save = async (body, back = true) => {
+      try {
+        await api('/reminder', { pid: current.id, aid: a.aid, ...body });
+        await loadData(pid);
+        flash(t('saved'));
+        if (back) setStack((st) => (st.length > 1 ? st.slice(0, -1) : st));
+      } catch {
+        flash(t('error'));
+      }
+    };
+    return page(<ReminderEditor key={`${current.id}:${a.aid}`} a={a} t={t} lang={lang} lastDay={latest(a).day} onSave={save} />);
   }
 
   // ---------- Profil ----------
@@ -685,6 +752,47 @@ export default function MiniApp() {
         {footer}
       </main>
     </>,
+  );
+}
+
+// Eslatma muddatini tanlash: 1–12 oy, laboratoriya tavsiyasi ⭐ bilan; keyingi topshirish sanasi darhol ko'rinadi
+const REMIND_STEPS = [1, 2, 3, 6, 12];
+function ReminderEditor({ a, t, lang, lastDay, onSave }) {
+  const active = a.remindMonths > 0 && !a.reminderOff;
+  const [months, setMonths] = useState(a.remindOwn || a.remindLab || 3);
+  const steps = [...new Set([...REMIND_STEPS, a.remindLab, a.remindOwn].filter((m) => m > 0))].sort((x, y) => x - y);
+  const next = addMonths(lastDay, months);
+  const overdue = next <= todayIso();
+  return (
+    <div className={`${card} space-y-4`} style={cardStyle}>
+      <div>
+        <p className="text-[16px] font-semibold">{analyteName(a, lang)}</p>
+        <p className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('remLast', { d: fmtDay(lastDay) })}</p>
+      </div>
+      <div className="space-y-2">
+        <p className="text-[14px]">{t('remHow')}</p>
+        <div className="flex flex-wrap gap-2">
+          {steps.map((m) => (
+            <button key={m} type="button" onClick={() => setMonths(m)} className="rounded-full px-3.5 py-1.5 text-[14px] font-semibold"
+              style={months === m ? { background: 'var(--hp-primary)', color: 'var(--hp-on-primary)' } : { border: '1px solid var(--hp-line)' }}>
+              {m === a.remindLab ? '⭐ ' : ''}{t('remChip', { m })}
+            </button>
+          ))}
+        </div>
+        {a.remindLab > 0 && <p className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('remLabTip', { m: a.remindLab })}</p>}
+        <p className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('remDoctorTip')}</p>
+      </div>
+      <p className="text-[14px] font-semibold" style={{ color: overdue ? 'var(--hp-bad)' : 'var(--hp-ok)' }}>
+        {overdue ? t('remOverdue') : t('remNextOn', { d: fmtDay(next) })}
+      </p>
+      <div className="space-y-2">
+        <Button className="w-full" onClick={() => onSave({ on: true, months })}>{t('remSave')}</Button>
+        {a.remindOwn > 0 && a.remindLab > 0 && a.remindOwn !== a.remindLab && (
+          <Button kind="soft" className="w-full" onClick={() => onSave({ on: true, months: null })}>{t('remReset')}</Button>
+        )}
+        {active && <Button kind="soft" className="w-full" onClick={() => onSave({ on: false })}>{t('remDelete')}</Button>}
+      </div>
+    </div>
   );
 }
 
