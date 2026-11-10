@@ -24,6 +24,7 @@ import { renderPdf } from './pdf.js';
 import { profileName, RELATIONS, say } from './texts.js';
 import { ageDays, isQuiet, nextPendingCheck, nextWatchCheck, resultHash, scheduleConfig, tashkentHour } from './schedule.js';
 import { countRows, logParse, saveResults } from './results.js';
+import { buildReport } from './report.js';
 import { avatarEmoji } from '../../src/data/avatars.js';
 
 const CHECK_GAP_SECONDS = 30; // bir blankni 30 soniyada bir martadan ko'p tekshirmaymiz
@@ -299,6 +300,80 @@ async function sendBlank(job) {
   track('bot:pdf');
 }
 
+// "Shifokorga ko'rsatish" PDF
+async function sendReport(job) {
+  const { rows: [u] } = await query('SELECT lang FROM bot_users WHERE telegram_id = $1', [job.telegram_id]);
+  const lang = u?.lang === 'ru' ? 'ru' : 'uz';
+  const { pid, aids, months } = job.payload || {};
+  const report = await buildReport({ telegramId: job.telegram_id, pid, aids: aids || [], months: Number(months) || 0, lang, siteBase: siteBase() });
+  if (!report) return;
+  if (report.empty) return tg.send(job.telegram_id, say('reportEmpty', lang));
+  await tg.typing(job.telegram_id);
+  const pdf = await renderPdf(report.html);
+  const who = `${avatarEmoji(report.profile)} ${profileName(report.profile, lang)}`;
+  await tg.sendPdf(job.telegram_id, pdf, 'HayotPlus-dinamika.pdf', say('reportCaption', lang, { who }));
+  track('bot:report');
+}
+
+// ---- 4b: qayta topshirish eslatmalari (har kuni 10:00, Toshkent) ----
+const REMIND_HOUR = 10;
+async function sendReminders() {
+  if (tashkentHour() !== REMIND_HOUR || !tg || !botReady(cfg)) return;
+  const ran = await query(`SELECT 1 FROM daily_stats WHERE day = ${TODAY} AND metric = 'bot:remind_run'`);
+  if (ran.rows[0]) return;
+  track('bot:remind_run'); // bugun qayta ishlamasin
+  const { rows } = await query(
+    `WITH last AS (
+       SELECT o.telegram_id, o.patient_id, coalesce(nullif(a.merged_into, 0), a.id) AS aid,
+              max(coalesce(r.measured_on, (o.created_at AT TIME ZONE 'Asia/Tashkent')::date)) AS last_day
+       FROM lab_results r JOIN bot_orders o ON o.id = r.order_id JOIN lab_analytes a ON a.id = r.analyte_id
+       WHERE o.patient_id IS NOT NULL
+       GROUP BY 1, 2, 3)
+     SELECT l.telegram_id, l.patient_id, l.aid, to_char(l.last_day, 'DD.MM.YYYY') AS last_txt, l.last_day,
+            c.remind_months, c.lis_name, c.name_uz, c.name_ru, u.lang,
+            p.relation, p.label, p.birth_year, p.sex, p.avatar
+     FROM last l
+     JOIN lab_analytes c ON c.id = l.aid
+     JOIN bot_users u ON u.telegram_id = l.telegram_id AND u.data_consent = true
+     JOIN bot_patients p ON p.id = l.patient_id
+     LEFT JOIN patient_reminders pr ON pr.patient_id = l.patient_id AND pr.analyte_id = l.aid
+     WHERE c.remind_months > 0
+       AND l.last_day + make_interval(months => c.remind_months) <= ${TODAY}
+       AND coalesce(pr.off, false) = false
+       AND (pr.last_sent_for IS NULL OR pr.last_sent_for < l.last_day)
+     ORDER BY l.patient_id, c.lis_name`,
+  );
+  const byPatient = new Map();
+  for (const r of rows) {
+    if (!byPatient.has(r.patient_id)) byPatient.set(r.patient_id, []);
+    byPatient.get(r.patient_id).push(r);
+  }
+  for (const [pid, items] of byPatient) {
+    const first = items[0];
+    const lang = first.lang === 'ru' ? 'ru' : 'uz';
+    const name = (r) => (lang === 'ru' ? r.name_ru || r.name_uz : r.name_uz) || r.lis_name;
+    const list = items.map((r) => say('remindLine', lang, { name: name(r), d: r.last_txt, m: r.remind_months })).join('\n');
+    const who = `${avatarEmoji(first)} ${profileName(first, lang)}`;
+    const buttons = [...appButton(lang)];
+    if (items.length === 1) buttons.push([{ text: say('remindOffBtn', lang), callback_data: `ro:${pid}:${first.aid}` }]);
+    try {
+      await tg.send(first.telegram_id, say('remind', lang, { who, list, phone: siteInfo().phone }), buttons);
+      track('bot:remind');
+    } catch (err) {
+      console.error('Bot remind:', safe(err));
+      if (err.code !== 403) continue; // bloklagan bo'lsa ham "yuborildi" deb belgilaymiz — qayta urinmaymiz
+    }
+    for (const r of items) {
+      await query(
+        `INSERT INTO patient_reminders (patient_id, analyte_id, last_sent_for) VALUES ($1, $2, $3)
+         ON CONFLICT (patient_id, analyte_id) DO UPDATE SET last_sent_for = EXCLUDED.last_sent_for, updated_at = now()`,
+        [pid, r.aid, r.last_day],
+      );
+    }
+    await sleep(100); // Telegram chegarasi: soniyasiga 30 xabardan oshmasin
+  }
+}
+
 let jobsBusy = false;
 async function runJobs() {
   if (jobsBusy || !tg || !botReady(cfg)) return;
@@ -307,11 +382,12 @@ async function runJobs() {
     const { rows } = await query(
       `UPDATE bot_jobs SET done_at = now()
        WHERE id IN (SELECT id FROM bot_jobs WHERE done_at IS NULL ORDER BY id LIMIT 5 FOR UPDATE SKIP LOCKED)
-       RETURNING id, kind, telegram_id, order_id`,
+       RETURNING id, kind, telegram_id, order_id, payload`,
     );
     for (const job of rows) {
       try {
         if (job.kind === 'send_pdf') await sendBlank(job);
+        else if (job.kind === 'report') await sendReport(job);
         else if (job.kind === 'import') await importOrders(job.telegram_id, 0);
       } catch (err) {
         console.error('Bot job:', safe(err));
@@ -428,6 +504,20 @@ async function onCallback(cb) {
     await deleteUser(cb.from.id);
     track('bot:deleted');
     return tg.send(chat.id, say('deleted', lang));
+  }
+
+  // Eslatmani o'chirish: ro:<profil>:<ko'rsatkich>
+  const ro = data.match(/^ro:(\d{1,18}):(\d{1,18})$/);
+  if (ro) {
+    await done();
+    const r = await query(
+      `INSERT INTO patient_reminders (patient_id, analyte_id, off)
+       SELECT p.id, $3, true FROM bot_patients p WHERE p.id = $1 AND p.telegram_id = $2
+       ON CONFLICT (patient_id, analyte_id) DO UPDATE SET off = true, updated_at = now()`,
+      [ro[1], cb.from.id, ro[2]],
+    );
+    if (r.rowCount) return tg.send(chat.id, say('remindOff', lang));
+    return null;
   }
 
   // ok:<blank> | no:<blank> | chk:<blank> | dc:y|n:<blank> | pg:<blank>:<profil> | po:<blank> | pn:<blank>:<tur>
@@ -571,6 +661,7 @@ async function main() {
   setInterval(runPurge, 12 * 3600000).unref();
   setInterval(worker, WORKER_EVERY_MS).unref();
   setInterval(runJobs, 3000).unref();
+  setInterval(() => sendReminders().catch((err) => console.error('Bot reminders:', safe(err))), 5 * 60000).unref();
   setInterval(() => dailySummary().catch((err) => console.error('Bot summary:', safe(err))), 5 * 60000).unref();
 
   let token = '';

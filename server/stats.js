@@ -43,7 +43,7 @@ export const METRICS = [
   'view:home', 'uniq:site', 'uniq:home', 'view:natija', 'uniq:natija',
   'results:ok', 'results:notfound', 'results:pending', 'ai:new', 'ai:cached', 'ai:error', 'ai:limit',
   'bot:link', 'bot:start', 'bot:pdf', 'bot:auto', 'bot:updated', 'bot:operator', 'bot:expired', 'bot:pending', 'bot:error',
-  'lab:rows', 'bot:deleted', 'bot:summary',
+  'lab:rows', 'bot:deleted', 'bot:summary', 'bot:remind', 'bot:report',
 ];
 
 // Oxirgi `days` kun: har kun bo'yicha qatorlar + bugun / 7 / 30 kun / jami yig'indilar

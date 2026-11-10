@@ -91,7 +91,7 @@ router.get('/data', wrap(async (req, res) => {
   const p = await profileOf(req, req.query.pid);
   if (!p) return res.status(404).json({ error: 'not_found' });
   const { rows } = await query(
-    `SELECT c.id AS aid, c.lis_name, c.name_uz, c.name_ru, c.unit AS c_unit, c.group_title,
+    `SELECT c.id AS aid, c.lis_name, c.name_uz, c.name_ru, c.unit AS c_unit, c.group_title, c.remind_months,
             o.id AS order_id, o.lis_id,
             to_char(coalesce(r.measured_on, (o.created_at AT TIME ZONE 'Asia/Tashkent')::date), 'YYYY-MM-DD') AS day,
             r.value_text, r.value_num::float8 AS value_num, r.unit, r.ref_text, r.ref_low::float8 AS ref_low, r.ref_high::float8 AS ref_high
@@ -107,6 +107,14 @@ router.get('/data', wrap(async (req, res) => {
     ? await query('SELECT analyte_id FROM patient_favorites WHERE patient_id = $1', [p.id])
     : { rows: [] };
   const fav = new Set(favs.map((f) => Number(f.analyte_id)));
+  const { rows: rems } = p.id
+    ? await query('SELECT analyte_id, off FROM patient_reminders WHERE patient_id = $1', [p.id])
+    : { rows: [] };
+  const remOff = new Set(rems.filter((r) => r.off).map((r) => Number(r.analyte_id)));
+  const { rows: tgts } = p.id
+    ? await query('SELECT analyte_id, low::float8 AS low, high::float8 AS high FROM patient_targets WHERE patient_id = $1', [p.id])
+    : { rows: [] };
+  const target = new Map(tgts.map((x) => [Number(x.analyte_id), { low: x.low, high: x.high }]));
 
   const analytes = new Map();
   const visits = new Map();
@@ -116,6 +124,7 @@ router.get('/data', wrap(async (req, res) => {
       analytes.set(aid, {
         aid, lis_name: r.lis_name, name_uz: r.name_uz, name_ru: r.name_ru, group: r.group_title,
         unit: r.c_unit || r.unit, favorite: fav.has(aid), points: [],
+        remindMonths: r.remind_months || 0, reminderOff: remOff.has(aid), target: target.get(aid) || null,
       });
     }
     // Me'yor: blankdagi oddiy oraliq yoki profil jinsi bo'yicha ("Муж < 42, Жен < 32")
@@ -176,6 +185,57 @@ router.post('/favorite', wrap(async (req, res) => {
   } else {
     await query('DELETE FROM patient_favorites WHERE patient_id = $1 AND analyte_id = $2', [p.id, aid]);
   }
+  res.json({ ok: true });
+}));
+
+// Qayta topshirish eslatmasini yoqish / o'chirish (profil x ko'rsatkich)
+router.post('/reminder', wrap(async (req, res) => {
+  const p = await profileOf(req, String(req.body?.pid ?? ''));
+  const aid = String(req.body?.aid ?? '');
+  if (!p?.id || !isId(aid)) return res.status(404).json({ error: 'not_found' });
+  await query(
+    `INSERT INTO patient_reminders (patient_id, analyte_id, off) SELECT $1, id, $3 FROM lab_analytes WHERE id = $2
+     ON CONFLICT (patient_id, analyte_id) DO UPDATE SET off = EXCLUDED.off, updated_at = now()`,
+    [p.id, aid, req.body?.on !== true],
+  );
+  res.json({ ok: true });
+}));
+
+// Shaxsiy maqsad: past va/yoki yuqori chegara; ikkalasi bo'sh — o'chiriladi
+const numOrNull = (v) => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(String(v).replace(',', '.').trim());
+  return Number.isFinite(n) && Math.abs(n) < 1e9 ? n : undefined;
+};
+router.post('/target', wrap(async (req, res) => {
+  const p = await profileOf(req, String(req.body?.pid ?? ''));
+  const aid = String(req.body?.aid ?? '');
+  if (!p?.id || !isId(aid)) return res.status(404).json({ error: 'not_found' });
+  const low = numOrNull(req.body?.low);
+  const high = numOrNull(req.body?.high);
+  if (low === undefined || high === undefined || (low !== null && high !== null && low > high)) return res.status(400).json({ error: 'bad_target' });
+  if (low === null && high === null) {
+    await query('DELETE FROM patient_targets WHERE patient_id = $1 AND analyte_id = $2', [p.id, aid]);
+  } else {
+    await query(
+      `INSERT INTO patient_targets (patient_id, analyte_id, low, high) SELECT $1, id, $3, $4 FROM lab_analytes WHERE id = $2
+       ON CONFLICT (patient_id, analyte_id) DO UPDATE SET low = EXCLUDED.low, high = EXCLUDED.high, updated_at = now()`,
+      [p.id, aid, low, high],
+    );
+  }
+  res.json({ ok: true });
+}));
+
+// "Shifokorga ko'rsatish": grafiklar va jadval bilan PDF — bot konteyneri tayyorlab chatga yuboradi
+router.post('/report', rateLimit({ windowMs: 10 * 60000, max: 5, key: (req) => `report:${req.me.telegram_id}` }), wrap(async (req, res) => {
+  const p = await profileOf(req, String(req.body?.pid ?? ''));
+  const aids = (Array.isArray(req.body?.aids) ? req.body.aids : []).map(String).filter(isId).slice(0, 30);
+  const months = [6, 12, 0].includes(Number(req.body?.months)) ? Number(req.body.months) : 12;
+  if (!p?.id || !aids.length) return res.status(400).json({ error: 'bad_request' });
+  await query(
+    "INSERT INTO bot_jobs (kind, telegram_id, payload) VALUES ('report', $1, $2)",
+    [req.me.telegram_id, JSON.stringify({ pid: p.id, aids: aids.map(Number), months })],
+  );
   res.json({ ok: true });
 }));
 

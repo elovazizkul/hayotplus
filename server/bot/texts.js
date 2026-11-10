@@ -35,6 +35,24 @@ export const T = {
     ru: 'Все ваши данные удалены. Бот больше ничего вам не пришлёт.',
   },
   openApp: { uz: '📊 Mening tahlillarim', ru: '📊 Мои анализы' },
+  remind: {
+    uz: '🔔 Qayta topshirish vaqti keldi — {who}\n\n{list}\n\nShifokoringiz boshqacha aytgan boʻlsa — unga amal qiling.\nSavollar: {phone}',
+    ru: '🔔 Пора пересдать анализ — {who}\n\n{list}\n\nЕсли ваш врач советовал иначе — следуйте его рекомендации.\nВопросы: {phone}',
+  },
+  remindLine: { uz: '• {name} — oxirgi marta {d} da (tavsiya: har {m} oyda)', ru: '• {name} — последний раз {d} (рекомендуется каждые {m} мес.)' },
+  remindOffBtn: { uz: '🔕 Bu eslatmani oʻchirish', ru: '🔕 Отключить это напоминание' },
+  remindOff: {
+    uz: 'Eslatma oʻchirildi. Uni «📊 Mening tahlillarim» da, koʻrsatkich grafigi ostida qayta yoqish mumkin.',
+    ru: 'Напоминание отключено. Включить снова можно в «📊 Мои анализы», под графиком показателя.',
+  },
+  reportCaption: {
+    uz: '🩺 Tahlillar dinamikasi — {who}\nShifokorga koʻrsatish uchun.',
+    ru: '🩺 Динамика анализов — {who}\nДля показа врачу.',
+  },
+  reportEmpty: {
+    uz: 'Tanlangan davrda bu koʻrsatkichlar boʻyicha natija yoʻq. Boshqa davrni tanlang.',
+    ru: 'За выбранный период по этим показателям нет результатов. Выберите другой период.',
+  },
   lisLater: {
     uz: 'Laboratoriya dasturi hozir javob bermayapti. Birozdan keyin qayta urinib koʻring.',
     ru: 'Лабораторная программа сейчас не отвечает. Попробуйте чуть позже.',

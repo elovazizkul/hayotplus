@@ -277,6 +277,7 @@ export const resources = {
       ...lang('name', 'Grafik uchun qisqa nomi', { list: true }),
       { name: 'unit', label: 'Birlik', type: 'text', readOnly: true, list: true },
       { name: 'outsourced', label: 'Autsors — natijani operator yuboradi', type: 'bool', default: false, list: true, filter: true },
+      { name: 'remind_months', label: 'Eslatma: har necha oyda qayta topshirish (0 — eslatma yoʻq)', type: 'int', default: 0, min: 0, list: true, filter: true },
       { name: 'merged_into', label: 'Shu № koʻrsatkich bilan bir xil (0 — yoʻq)', type: 'int', default: 0, min: 0 },
       { name: 'seen_count', label: 'Necha marta uchradi', type: 'int', readOnly: true, list: true },
       { name: 'first_seen', label: 'Birinchi marta', type: 'datetime', readOnly: true, filter: true },

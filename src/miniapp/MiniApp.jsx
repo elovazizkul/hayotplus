@@ -14,14 +14,14 @@ const THEMES = {
     '--hp-text': '#131b2e', '--hp-muted': '#5f6b78', '--hp-line': '#e2e8f5', '--hp-primary': '#00628e',
     '--hp-on-primary': '#ffffff', '--hp-soft': '#d6fbe9', '--hp-on-soft': '#005236', '--hp-ok': '#006c49',
     '--hp-bad': '#ba1a1a', '--hp-norm': '#d6fbe9', '--hp-chip': 'rgba(255,255,255,0.16)', '--hp-chip-on': '#ffffff',
-    '--hp-chip-on-text': '#00628e', '--hp-warn-bg': '#fff4dc', '--hp-warn-text': '#7a5200',
+    '--hp-chip-on-text': '#00628e', '--hp-warn-bg': '#fff4dc', '--hp-warn-text': '#7a5200', '--hp-goal': '#e08a00',
   },
   dark: {
     '--hp-bg': '#0f1724', '--hp-card': '#1a2433', '--hp-head': '#0b3550', '--hp-head-text': '#e6edf6',
     '--hp-text': '#e6edf6', '--hp-muted': '#9fb3c8', '--hp-line': '#263244', '--hp-primary': '#8bceff',
     '--hp-on-primary': '#001e2f', '--hp-soft': '#003824', '--hp-on-soft': '#6ffbbe', '--hp-ok': '#4edea3',
     '--hp-bad': '#ffb4ab', '--hp-norm': 'rgba(78,222,163,0.16)', '--hp-chip': 'rgba(255,255,255,0.10)', '--hp-chip-on': '#8bceff',
-    '--hp-chip-on-text': '#001e2f', '--hp-warn-bg': '#3a2c0b', '--hp-warn-text': '#ffd88a',
+    '--hp-chip-on-text': '#001e2f', '--hp-warn-bg': '#3a2c0b', '--hp-warn-text': '#ffd88a', '--hp-goal': '#ffb74d',
   },
 };
 
@@ -240,7 +240,8 @@ export default function MiniApp() {
   const visitOf = (id) => data?.visits.find((v) => v.id === id);
   const title = screen.name === 'chart'
     ? analyteName(data?.analytes.find((a) => a.aid === screen.aid) || {}, lang)
-    : screen.name === 'visit' ? fmtDay(visitOf(screen.id)?.day) : t('title');
+    : screen.name === 'visit' ? fmtDay(visitOf(screen.id)?.day)
+      : screen.name === 'report' ? t('reportTitle') : t('title');
 
   // ---------- Sarlavha: kimning tahlillari ----------
   const chip = (p) => {
@@ -330,8 +331,22 @@ export default function MiniApp() {
               <span className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{a.unit}</span>
               <span className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('times', { n: a.points.length })}</span>
             </div>
-            {numeric ? <Chart points={a.points} normLabel={t('norm')} /> : <p className="text-[14px]">{t('noNumbers')}</p>}
+            {numeric
+              ? <Chart points={a.points} target={a.target} normLabel={a.target ? `${t('norm')} · ${t('goalLine')}` : t('norm')} />
+              : <p className="text-[14px]">{t('noNumbers')}</p>}
           </div>
+          {current.id !== 'none' && a.remindMonths > 0 && (
+            <div className={`${card} flex items-center justify-between gap-3`} style={cardStyle}>
+              <span className="text-[14px]">{t(a.reminderOff ? 'remindOff' : 'remindOn', { m: a.remindMonths })}</span>
+              <button type="button" className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] font-semibold" style={{ border: '1px solid var(--hp-line)', color: 'var(--hp-primary)' }}
+                onClick={async () => { await api('/reminder', { pid: current.id, aid: a.aid, on: a.reminderOff }); await loadData(pid); }}>
+                {t(a.reminderOff ? 'turnOn' : 'turnOff')}
+              </button>
+            </div>
+          )}
+          {current.id !== 'none' && numeric && (
+            <GoalCard key={a.aid} a={a} t={t} onSave={async (low, high) => { await api('/target', { pid: current.id, aid: a.aid, low, high }); await loadData(pid); flash(t('saved')); }} />
+          )}
           <div className={card} style={cardStyle}>
             <div className="grid grid-cols-[1fr_auto] gap-x-3 pb-2 text-[12px] font-semibold" style={{ color: 'var(--hp-muted)' }}>
               <span>{t('date')} · {t('ref')}</span><span className="text-right">{t('value')}</span>
@@ -417,6 +432,25 @@ export default function MiniApp() {
     );
   }
 
+  // ---------- Shifokorga ko'rsatish (PDF) ----------
+  if (screen.name === 'report') {
+    return shell(
+      <>
+        {header}
+        <ReportForm data={data} t={t} lang={lang}
+          onSubmit={async (aids, months) => {
+            try {
+              await api('/report', { pid: current.id, aids, months });
+              flash(t('reportSent'));
+              setScreen({ name: 'home' });
+            } catch {
+              flash(t('error'));
+            }
+          }} />
+      </>,
+    );
+  }
+
   // ---------- Bosh ekran ----------
   const latest = (a) => a.points[a.points.length - 1];
   const favs = data.analytes.filter((a) => a.favorite);
@@ -459,6 +493,9 @@ export default function MiniApp() {
           </div>
         )}
         {current.id === 'none' && <div className={card} style={cardStyle}><p className="text-[14px]" style={{ color: 'var(--hp-muted)' }}>{t('unassignedHint')}</p></div>}
+        {current.id !== 'none' && data.analytes.length > 0 && (
+          <Button kind="soft" onClick={() => setScreen({ name: 'report' })}>{t('report')}</Button>
+        )}
 
         <div className="grid grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'var(--hp-card)' }}>
           {['analytes', 'visits'].map((k) => (
@@ -504,6 +541,111 @@ export default function MiniApp() {
         {footer}
       </main>
     </>,
+  );
+}
+
+const inputStyle = { background: 'var(--hp-bg)', color: 'var(--hp-text)', border: '1px solid var(--hp-line)' };
+const toNum = (s) => (String(s).trim() === '' ? null : Number(String(s).replace(',', '.')));
+const fmtNum = (v) => (v === null || v === undefined ? '' : String(v).replace('.', ','));
+
+// Shaxsiy maqsad: grafikda to'q sariq punktir
+function GoalCard({ a, t, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [low, setLow] = useState(fmtNum(a.target?.low));
+  const [high, setHigh] = useState(fmtNum(a.target?.high));
+  const [err, setErr] = useState('');
+  const shown = a.target
+    ? [a.target.low !== null ? `≥ ${fmtNum(a.target.low)}` : '', a.target.high !== null ? `≤ ${fmtNum(a.target.high)}` : ''].filter(Boolean).join('   ')
+    : '';
+  const save = async (l, h) => {
+    const lo = toNum(l);
+    const hi = toNum(h);
+    if ((lo !== null && !Number.isFinite(lo)) || (hi !== null && !Number.isFinite(hi))) return setErr(t('goalBad'));
+    if (lo !== null && hi !== null && lo > hi) return setErr(t('goalBad'));
+    setErr('');
+    await onSave(lo, hi);
+    setOpen(false);
+    return undefined;
+  };
+  return (
+    <div className="rounded-2xl p-4" style={{ background: 'var(--hp-card)' }}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[14px] font-semibold">{t('goalTitle')}</span>
+        {shown && <span className="text-[15px] font-semibold" style={{ color: 'var(--hp-goal)' }}>{shown}</span>}
+      </div>
+      {!shown && !open && <p className="mt-1 text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('goalNone')}</p>}
+      {!open ? (
+        <button type="button" className="mt-2 text-[14px] font-semibold" style={{ color: 'var(--hp-primary)' }} onClick={() => setOpen(true)}>{t('goalSet')} ›</button>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            {[[t('goalLow'), low, setLow], [t('goalHigh'), high, setHigh]].map(([label, v, set]) => (
+              <label key={label} className="block text-[12px]" style={{ color: 'var(--hp-muted)' }}>
+                {label}
+                <input value={v} onChange={(e) => { set(e.target.value); setErr(''); }} inputMode="decimal" placeholder={a.unit}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-[16px]" style={inputStyle} />
+              </label>
+            ))}
+          </div>
+          <p className="text-[12px]" style={{ color: err ? 'var(--hp-bad)' : 'var(--hp-muted)' }}>{err || t('goalHint')}</p>
+          <Button onClick={() => save(low, high)}>{t('save')}</Button>
+          {a.target && <Button kind="ghost" onClick={() => { setLow(''); setHigh(''); save('', ''); }}>{t('goalClear')}</Button>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// "Shifokorga ko'rsatish": ko'rsatkichlar va davr tanlanadi, PDF bot chatiga keladi
+function ReportForm({ data, t, lang, onSubmit }) {
+  const sorted = [...data.analytes].sort((x, y) => (y.favorite - x.favorite) || analyteName(x, lang).localeCompare(analyteName(y, lang)));
+  const [picked, setPicked] = useState(() => {
+    const favs = sorted.filter((a) => a.favorite).map((a) => a.aid);
+    return new Set(favs.length ? favs : sorted.slice(0, 6).map((a) => a.aid));
+  });
+  const [months, setMonths] = useState(12);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toggle = (aid) => setPicked((s) => {
+    const n = new Set(s);
+    if (n.has(aid)) n.delete(aid);
+    else n.add(aid);
+    setErr('');
+    return n;
+  });
+  return (
+    <main className="space-y-3 p-4">
+      <div className="rounded-2xl px-4 pb-1 pt-3" style={{ background: 'var(--hp-card)' }}>
+        <p className="text-[13px] font-semibold" style={{ color: 'var(--hp-muted)' }}>{t('reportPick')}</p>
+        {sorted.map((a) => (
+          <button key={a.aid} type="button" onClick={() => toggle(a.aid)} className="flex w-full items-center gap-3 py-3 text-left" style={{ borderTop: '1px solid var(--hp-line)' }}>
+            <Icon name={picked.has(a.aid) ? 'check_box' : 'check_box_outline_blank'} size={22} className="shrink-0" />
+            <span className="text-[15px]">{a.favorite ? '★ ' : ''}{analyteName(a, lang)}</span>
+          </button>
+        ))}
+      </div>
+      <div className="rounded-2xl p-4" style={{ background: 'var(--hp-card)' }}>
+        <p className="mb-2 text-[13px] font-semibold" style={{ color: 'var(--hp-muted)' }}>{t('reportPeriod')}</p>
+        <div className="grid grid-cols-3 gap-2">
+          {[[6, 'm6'], [12, 'm12'], [0, 'mAll']].map(([m, k]) => (
+            <button key={m} type="button" onClick={() => setMonths(m)} className="rounded-xl py-2.5 text-[14px] font-semibold"
+              style={months === m ? { background: 'var(--hp-primary)', color: 'var(--hp-on-primary)' } : { border: '1px solid var(--hp-line)', color: 'var(--hp-text)' }}>
+              {t(k)}
+            </button>
+          ))}
+        </div>
+      </div>
+      {err && <p className="px-1 text-[13px]" style={{ color: 'var(--hp-bad)' }}>{err}</p>}
+      <Button disabled={busy} onClick={async () => {
+        if (!picked.size) return setErr(t('reportNone'));
+        setBusy(true);
+        await onSubmit([...picked], months);
+        setBusy(false);
+        return undefined;
+      }}>
+        <span className="inline-flex items-center gap-2"><Icon name="stethoscope" size={20} />{t('reportMake')}</span>
+      </Button>
+    </main>
   );
 }
 
