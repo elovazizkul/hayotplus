@@ -18,3 +18,13 @@ export function isKeyAnalyte(groupTitle, name) {
   const rule = RULES.find((r) => r.group.test(groupTitle || ''));
   return Boolean(rule && rule.names.some((re) => re.test(String(name || '').trim())));
 }
+
+// Laboratoriya tavsiyasi (necha oyda qayta topshirish) — yangi ko'rsatkich birinchi marta tushganda.
+// Egasi misoli: glikirlangan gemoglobin (HbA1c) — har 3 oyda (014 migratsiya bilan bir xil shart).
+// Keyin admin panelda o'zgartirilsa — o'sha qiymat qoladi, bu yerda qayta yozilmaydi.
+const REMIND = [{ name: /гликир|hba1c/i, months: 3 }];
+
+export function defaultRemindMonths(name) {
+  const rule = REMIND.find((r) => r.name.test(String(name || '')));
+  return rule ? rule.months : 0;
+}
