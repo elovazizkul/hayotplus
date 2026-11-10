@@ -3,6 +3,7 @@
 
 import { query, tx } from '../db.js';
 import { isoDate, parseRef, parseValue } from './values.js';
+import { isKeyAnalyte } from './key-analytes.js';
 
 const cut = (s, n) => String(s ?? '').trim().slice(0, n);
 
@@ -17,12 +18,12 @@ export async function saveResults(orderId, lab) {
         const name = cut(x.name, 200);
         if (!name) continue;
         const { rows: [a] } = await c.query(
-          `INSERT INTO lab_analytes (lis_name, group_title, unit, seen_count) VALUES ($1, $2, $3, 1)
+          `INSERT INTO lab_analytes (lis_name, group_title, unit, seen_count, is_key) VALUES ($1, $2, $3, 1, $4)
            ON CONFLICT (lis_name, group_title) DO UPDATE SET
              seen_count = lab_analytes.seen_count + 1, last_seen = now(),
              unit = CASE WHEN lab_analytes.unit = '' THEN EXCLUDED.unit ELSE lab_analytes.unit END
            RETURNING id, (xmax = 0) AS inserted`,
-          [name, cut(g.title, 120), cut(x.unit, 40)],
+          [name, cut(g.title, 120), cut(x.unit, 40), isKeyAnalyte(g.title, name)],
         );
         if (a.inserted) newAnalytes += 1;
         const ref = parseRef(x.ref);

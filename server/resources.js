@@ -276,6 +276,8 @@ export const resources = {
       { name: 'group_title', label: 'Guruh', type: 'text', readOnly: true, list: true },
       ...lang('name', 'Grafik uchun qisqa nomi', { list: true }),
       { name: 'unit', label: 'Birlik', type: 'text', readOnly: true, list: true },
+      { name: 'is_key', label: 'Asosiy koʻrsatkich (umumiy qon/siydik tahlilida doim koʻrinadi)', type: 'bool', default: false, list: true, filter: true },
+      { name: 'auto_watch', label: 'Kuzatuvga avtomatik qoʻshilsin (Mini App → Kuzatuv)', type: 'bool', default: false, list: true, filter: true },
       { name: 'outsourced', label: 'Autsors — natijani operator yuboradi', type: 'bool', default: false, list: true, filter: true },
       { name: 'remind_months', label: 'Eslatma: har necha oyda qayta topshirish (0 — eslatma yoʻq)', type: 'int', default: 0, min: 0, list: true, filter: true },
       { name: 'merged_into', label: 'Shu № koʻrsatkich bilan bir xil (0 — yoʻq)', type: 'int', default: 0, min: 0 },

@@ -30,6 +30,25 @@ const rowsOf = (tableHtml) =>
     [...m[1].matchAll(/<t([dh])\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((c) => ({ th: c[1].toLowerCase() === 'h', text: decode(c[2]) })),
   );
 
+// Ustunlar sarlavha bo'yicha topiladi: ba'zi blanklarda (umumiy qon tahlili) "Аббревиатура" ustuni bor —
+// tartib bo'yicha olinsa, natija o'rniga "PDW" kabi qisqartma chiqib qoladi.
+const COLS = {
+  abbr: /аббрев|abbrev|qisqart/i,
+  value: /результат|result|natija/i,
+  unit: /ед\.?\s*изм|единиц|unit|birlik/i,
+  ref: /норм|refer|me.?yor/i,
+};
+function columnsOf(rows) {
+  const head = rows.find((r) => r.some((c) => c.th));
+  const idx = { name: 0, value: 1, unit: 2, ref: 3, abbr: -1 };
+  if (!head) return idx;
+  for (const [key, re] of Object.entries(COLS)) {
+    const i = head.findIndex((c, n) => n > 0 && re.test(c.text));
+    if (i > 0) idx[key] = i;
+  }
+  return idx;
+}
+
 // Bemor ismi va shifokor ismi olinmaydi: faqat blank raqami, sana, tug'ilgan yil va natijalar
 export function parseResultsHtml(html) {
   const info = {};
@@ -45,9 +64,17 @@ export function parseResultsHtml(html) {
       title = decode(m[1]).slice(0, 120);
       continue;
     }
-    const items = rowsOf(m[2])
+    const all = rowsOf(m[2]);
+    const col = columnsOf(all);
+    const items = all
       .filter((r) => r.length >= 2 && !r.some((c) => c.th))
-      .map((r) => ({ name: r[0].text, value: r[1].text, unit: r[2]?.text || '', ref: r[3]?.text || '' }))
+      .map((r) => ({
+        name: r[col.name].text,
+        value: r[col.value]?.text || '',
+        unit: r[col.unit]?.text || '',
+        ref: r[col.ref]?.text || '',
+        ...(col.abbr > 0 && r[col.abbr]?.text ? { abbr: r[col.abbr].text } : {}),
+      }))
       .filter((x) => x.name && x.value)
       .map((x) => Object.fromEntries(Object.entries(x).map(([k, v]) => [k, v.slice(0, 200)])));
     if (items.length) groups.push({ title, items: items.slice(0, 200) });

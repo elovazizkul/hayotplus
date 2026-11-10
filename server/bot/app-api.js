@@ -91,7 +91,7 @@ router.get('/data', wrap(async (req, res) => {
   const p = await profileOf(req, req.query.pid);
   if (!p) return res.status(404).json({ error: 'not_found' });
   const { rows } = await query(
-    `SELECT c.id AS aid, c.lis_name, c.name_uz, c.name_ru, c.unit AS c_unit, c.group_title, c.remind_months,
+    `SELECT c.id AS aid, c.lis_name, c.name_uz, c.name_ru, c.unit AS c_unit, c.group_title, c.remind_months, c.is_key, c.auto_watch,
             o.id AS order_id, o.lis_id,
             to_char(coalesce(r.measured_on, (o.created_at AT TIME ZONE 'Asia/Tashkent')::date), 'YYYY-MM-DD') AS day,
             r.value_text, r.value_num::float8 AS value_num, r.unit, r.ref_text, r.ref_low::float8 AS ref_low, r.ref_high::float8 AS ref_high
@@ -103,10 +103,12 @@ router.get('/data', wrap(async (req, res) => {
      ORDER BY day, r.id`,
     p.id ? [req.me.telegram_id, p.id] : [req.me.telegram_id],
   );
+  // Kuzatuv: bemor o'zi qo'shgan (off = false) yoki admin "avtomatik" belgilagan va bemor olib tashlamagan
   const { rows: favs } = p.id
-    ? await query('SELECT analyte_id FROM patient_favorites WHERE patient_id = $1', [p.id])
+    ? await query('SELECT analyte_id, off FROM patient_favorites WHERE patient_id = $1', [p.id])
     : { rows: [] };
-  const fav = new Set(favs.map((f) => Number(f.analyte_id)));
+  const watchRow = new Map(favs.map((f) => [Number(f.analyte_id), f.off]));
+  const watched = (aid, auto) => (watchRow.has(aid) ? !watchRow.get(aid) : Boolean(auto && p.id));
   const { rows: rems } = p.id
     ? await query('SELECT analyte_id, off FROM patient_reminders WHERE patient_id = $1', [p.id])
     : { rows: [] };
@@ -123,8 +125,8 @@ router.get('/data', wrap(async (req, res) => {
     if (!analytes.has(aid)) {
       analytes.set(aid, {
         aid, lis_name: r.lis_name, name_uz: r.name_uz, name_ru: r.name_ru, group: r.group_title,
-        unit: r.c_unit || r.unit, favorite: fav.has(aid), points: [],
-        remindMonths: r.remind_months || 0, reminderOff: remOff.has(aid), target: target.get(aid) || null,
+        unit: r.c_unit || r.unit, favorite: watched(aid, r.auto_watch), points: [],
+        remindMonths: r.remind_months || 0, reminderOff: remOff.has(aid), target: target.get(aid) || null, isKey: r.is_key === true,
       });
     }
     // Me'yor: blankdagi oddiy oraliq yoki profil jinsi bo'yicha ("Муж < 42, Жен < 32")
@@ -177,14 +179,12 @@ router.post('/favorite', wrap(async (req, res) => {
   const p = await profileOf(req, String(req.body?.pid ?? ''));
   const aid = String(req.body?.aid ?? '');
   if (!p?.id || !isId(aid)) return res.status(404).json({ error: 'not_found' });
-  if (req.body?.on === true) {
-    await query(
-      `INSERT INTO patient_favorites (patient_id, analyte_id) SELECT $1, id FROM lab_analytes WHERE id = $2 ON CONFLICT DO NOTHING`,
-      [p.id, aid],
-    );
-  } else {
-    await query('DELETE FROM patient_favorites WHERE patient_id = $1 AND analyte_id = $2', [p.id, aid]);
-  }
+  // Kuzatuvga qo'shish / olib tashlash. Olib tashlash ham yoziladi (off = true): avtomatik qo'shilgan ko'rsatkich qaytmasin
+  await query(
+    `INSERT INTO patient_favorites (patient_id, analyte_id, off) SELECT $1, id, $3 FROM lab_analytes WHERE id = $2
+     ON CONFLICT (patient_id, analyte_id) DO UPDATE SET off = EXCLUDED.off`,
+    [p.id, aid, req.body?.on !== true],
+  );
   res.json({ ok: true });
 }));
 

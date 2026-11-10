@@ -64,7 +64,7 @@ export function chartSvg(points, target) {
   if (last.low !== null || last.high !== null) {
     const top = last.high !== null ? y(last.high) : P.t;
     const bottom = last.low !== null ? y(last.low) : P.t + ih;
-    out.push(`<rect x="${P.l}" y="${top}" width="${iw}" height="${Math.max(bottom - top, 1)}" fill="#d6fbe9"/>`);
+    out.push(`<rect x="${P.l}" y="${top}" width="${iw}" height="${Math.max(bottom - top, 1)}" fill="#d7f3ee"/>`);
   }
   for (const v of [min + (max - min) * 0.1, (min + max) / 2, max - (max - min) * 0.1]) {
     out.push(`<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="#e2e8f5"/><text x="${P.l - 6}" y="${y(v) + 3}" font-size="10" text-anchor="end" fill="#5f6b78">${nice(v)}</text>`);
@@ -72,10 +72,10 @@ export function chartSvg(points, target) {
   for (const v of [target?.low, target?.high].filter((t) => typeof t === 'number')) {
     out.push(`<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="#e08a00" stroke-width="1.5" stroke-dasharray="6 4"/>`);
   }
-  if (pts.length > 1) out.push(`<polyline points="${pts.map((p, i) => `${x(i)},${y(p.num)}`).join(' ')}" fill="none" stroke="#00628e" stroke-width="2"/>`);
+  if (pts.length > 1) out.push(`<polyline points="${pts.map((p, i) => `${x(i)},${y(p.num)}`).join(' ')}" fill="none" stroke="#0f8a8a" stroke-width="2"/>`);
   const every = Math.ceil(pts.length / 6);
   pts.forEach((p, i) => {
-    out.push(`<circle cx="${x(i)}" cy="${y(p.num)}" r="4" fill="${p.flag ? '#ba1a1a' : '#00628e'}" stroke="#fff" stroke-width="1.5"/>`);
+    out.push(`<circle cx="${x(i)}" cy="${y(p.num)}" r="4" fill="${p.flag ? '#ba1a1a' : '#0f8a8a'}" stroke="#fff" stroke-width="1.5"/>`);
     const anchor = pts.length === 1 ? 'middle' : i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle';
     if (i % every === 0 || i === pts.length - 1) out.push(`<text x="${x(i)}" y="${H - 8}" font-size="10" text-anchor="${anchor}" fill="#5f6b78">${fmtDay(p.day)}</text>`);
   });
@@ -150,13 +150,13 @@ export function reportHtml({ p, list, targets, months, lang, siteBase }) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     @page{size:A4;margin:12mm}
     body{font-family:'Noto Sans','DejaVu Sans',Arial,sans-serif;color:#131b2e;font-size:11.5px;margin:0}
-    header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #00628e;padding-bottom:8px;margin-bottom:10px}
+    header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0f8a8a;padding-bottom:8px;margin-bottom:10px}
     .brand{display:flex;align-items:center;gap:10px}.brand img{width:44px;height:44px}
-    .brand b{font-size:18px;color:#00628e;display:block}.brand small{color:#5f6b78;font-size:12px}
+    .brand b{font-size:18px;color:#0f8a8a;display:block}.brand small{color:#5f6b78;font-size:12px}
     .who{display:flex;align-items:center;gap:10px;text-align:right}.who b{font-size:15px}
     .meta{color:#5f6b78;font-size:11px}
     section{break-inside:avoid;border:1px solid #e2e8f5;border-radius:10px;padding:8px 12px;margin:0 0 10px}
-    h3{margin:0 0 4px;font-size:14px;color:#00628e}h3 span{color:#5f6b78;font-weight:normal;font-size:11px}
+    h3{margin:0 0 4px;font-size:14px;color:#0f8a8a}h3 span{color:#5f6b78;font-weight:normal;font-size:11px}
     .legend{margin:2px 0 6px;color:#5f6b78;font-size:10px}
     table{width:100%;border-collapse:collapse}th{text-align:left;color:#5f6b78;font-weight:normal;font-size:10px;border-bottom:1px solid #e2e8f5}
     td{padding:3px 0;border-bottom:1px solid #f0f3fa}td.v{font-weight:bold;color:#006c49}td.bad{color:#ba1a1a}td.r{color:#5f6b78;font-size:10.5px}
