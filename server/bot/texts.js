@@ -1,13 +1,19 @@
 // Bot matnlari: o'zbekcha (lotin) va ruscha. {phone}, {site}, {n}, {d} — o'rniga qiymat qo'yiladi.
 
 export const T = {
+  // Egasi talabi: xizmat sinov rejimida, maʼlumotni asl (qogʻoz) blank bilan solishtirish kerak.
+  // Rozilik xabarida va /shartlar da toʻliq; PDF va hisobot izohida qisqa varianti.
+  beta: {
+    uz: '⚠️ Muhim: xizmat sinov rejimida ishlaydi\n\nUshbu bot va «Mening tahlillarim» ilovasi sinov (test) rejimida, bepul va «boricha» taqdim etiladi. Maʼlumotlar laboratoriya dasturidan avtomatik koʻchiriladi, shuning uchun ularda xatolik, kamchilik, kechikish yoki nomuvofiqlik boʻlishi mumkin.\n\n• Rasmiy natija — laboratoriya bergan asl blank (qogʻoz shaklida, imzo va muhr bilan). Farq boʻlsa, asl blankdagi maʼlumot toʻgʻri hisoblanadi.\n• Raqamlar, oʻlchov birliklari va meʼyorlarni har doim asl blank bilan solishtiring.\n• Bot, ilova, grafiklar va hisobotlar tibbiy hujjat emas, tashxis qoʻymaydi va shifokor maslahati oʻrnini bosmaydi. Davolash boʻyicha qarorlarni faqat shifokor bilan, asl blank asosida qabul qiling.\n• Nomuvofiqlik sezsangiz, bizga xabar bering: {phone}',
+    ru: '⚠️ Важно: сервис работает в тестовом режиме\n\nЭтот бот и приложение «Мои анализы» работают в тестовом режиме, бесплатно и «как есть». Данные переносятся из лабораторной программы автоматически, поэтому в них возможны ошибки, пропуски, задержки и несовпадения.\n\n• Официальный результат — оригинальный бланк, выданный лабораторией (на бумаге, с подписью и печатью). При расхождении верными считаются данные оригинального бланка.\n• Всегда сверяйте цифры, единицы измерения и нормы с оригинальным бланком.\n• Бот, приложение, графики и отчёты не являются медицинским документом, не ставят диагноз и не заменяют консультацию врача. Решения о лечении принимайте только вместе с врачом, на основании оригинального бланка.\n• Если заметили несовпадение, сообщите нам: {phone}',
+  },
   hello: {
-    uz: 'Assalomu alaykum! Bu Hayot Plus laboratoriyasining natijalar boti.\n\nNatijani olish uchun kvitansiyadagi QR-kodni saytda skanerlang va «Telegram’ga yuborish» tugmasini bosing:\n{site}\n\nSavollar boʻlsa: {phone}\nMaʼlumotlaringizni oʻchirish: /ochirish',
-    ru: 'Здравствуйте! Это бот результатов лаборатории Hayot Plus.\n\nЧтобы получить результаты, отсканируйте QR-код с квитанции на сайте и нажмите «Отправить в Telegram»:\n{site}\n\nЕсли есть вопросы: {phone}\nУдалить ваши данные: /ochirish',
+    uz: 'Assalomu alaykum! Bu Hayot Plus laboratoriyasining natijalar boti.\n\nNatijani olish uchun kvitansiyadagi QR-kodni saytda skanerlang va «Telegram’ga yuborish» tugmasini bosing:\n{site}\n\nSavollar boʻlsa: {phone}\nFoydalanish shartlari: /shartlar\nMaʼlumotlaringizni oʻchirish: /ochirish',
+    ru: 'Здравствуйте! Это бот результатов лаборатории Hayot Plus.\n\nЧтобы получить результаты, отсканируйте QR-код с квитанции на сайте и нажмите «Отправить в Telegram»:\n{site}\n\nЕсли есть вопросы: {phone}\nУсловия использования: /shartlar\nУдалить ваши данные: /ochirish',
   },
   dataConsent: {
-    uz: 'Natijalaringiz raqamlarini bazamizda saqlaylikmi? Ular keyinchalik oʻzgarishlarni (grafik) koʻrsatish uchun kerak boʻladi.\n\nIsm-familiya saqlanmaydi. Istalgan vaqtda /ochirish buyrugʻi bilan hammasini oʻchirishingiz mumkin.',
-    ru: 'Сохранить цифры ваших результатов в нашей базе? Они понадобятся, чтобы потом показывать изменения (графики).\n\nФИО не сохраняется. В любой момент можно удалить всё командой /ochirish.',
+    uz: 'Natijalaringiz raqamlarini bazamizda saqlaylikmi? Ular keyinchalik oʻzgarishlarni (grafik) koʻrsatish uchun kerak boʻladi.\n\nGrafiklar ham sinov rejimida: raqamlar avtomatik koʻchiriladi va xato boʻlishi mumkin, ularni asl blank bilan solishtiring.\n\nIsm-familiya saqlanmaydi. Istalgan vaqtda /ochirish buyrugʻi bilan hammasini oʻchirishingiz mumkin.',
+    ru: 'Сохранить цифры ваших результатов в нашей базе? Они понадобятся, чтобы потом показывать изменения (графики).\n\nГрафики тоже работают в тестовом режиме: цифры переносятся автоматически и могут содержать ошибки, сверяйте их с оригинальным бланком.\n\nФИО не сохраняется. В любой момент можно удалить всё командой /ochirish.',
   },
   dataYes: { uz: '✅ Ha, saqlansin', ru: '✅ Да, сохранить' },
   dataNo: { uz: 'Yoʻq', ru: 'Нет' },
@@ -46,8 +52,8 @@ export const T = {
     ru: 'Напоминание отключено. Включить снова можно в «📊 Мои анализы», под графиком показателя.',
   },
   reportCaption: {
-    uz: '🩺 Tahlillar dinamikasi — {who}\nShifokorga koʻrsatish uchun.',
-    ru: '🩺 Динамика анализов — {who}\nДля показа врачу.',
+    uz: '🩺 Tahlillar dinamikasi — {who}\nShifokorga koʻrsatish uchun.\n\n⚠️ Sinov rejimi: maʼlumotlarni asl (qogʻoz) blanklar bilan solishtiring. Farq boʻlsa, asl blank toʻgʻri hisoblanadi. Bu tibbiy hujjat emas.',
+    ru: '🩺 Динамика анализов — {who}\nДля показа врачу.\n\n⚠️ Тестовый режим: сверяйте данные с оригинальными (бумажными) бланками. При расхождении верным считается оригинал. Это не медицинский документ.',
   },
   reportEmpty: {
     uz: 'Tanlangan davrda bu koʻrsatkichlar boʻyicha natija yoʻq. Boshqa davrni tanlang.',
@@ -63,8 +69,8 @@ export const T = {
     ru: 'Эта ссылка устарела или уже использована (ссылка действует 15 минут).\n\nОтсканируйте QR-код на сайте ещё раз и снова нажмите «Отправить в Telegram»:\n{site}',
   },
   consent: {
-    uz: 'Hayot Plus tahlil natijalarini shu chatga PDF fayl koʻrinishida yuboramiz.\n\nFayl Telegram serverlarida saqlanadi. Rozimisiz?',
-    ru: 'Мы пришлём результаты анализов Hayot Plus в этот чат файлом PDF.\n\nФайл хранится на серверах Telegram. Вы согласны?',
+    uz: 'Hayot Plus tahlil natijalarini shu chatga PDF fayl koʻrinishida yuboramiz. Fayl Telegram serverlarida saqlanadi.\n\n{beta}\n\n«Roziman» tugmasini bosib, siz ushbu shartlar bilan tanishganingizni va ularga rozi ekaningizni tasdiqlaysiz. Shartlarni istalgan vaqtda koʻrish: /shartlar',
+    ru: 'Мы пришлём результаты анализов Hayot Plus в этот чат файлом PDF. Файл хранится на серверах Telegram.\n\n{beta}\n\nНажимая «Согласен(на)», вы подтверждаете, что ознакомились с этими условиями и согласны с ними. Посмотреть условия в любой момент: /shartlar',
   },
   agree: { uz: '✅ Roziman', ru: '✅ Согласен(на)' },
   disagree: { uz: 'Yoʻq', ru: 'Нет' },
@@ -73,8 +79,8 @@ export const T = {
     ru: 'Хорошо, ничего отправлять не будем. Результаты можно посмотреть на сайте:\n{site}',
   },
   caption: {
-    uz: 'Hayot Plus — tahlil natijalari\nBlank №{n}{d}\n\nSavollar boʻlsa: {phone}',
-    ru: 'Hayot Plus — результаты анализов\nБланк №{n}{d}\n\nЕсли есть вопросы: {phone}',
+    uz: 'Hayot Plus — tahlil natijalari\nBlank №{n}{d}\n\n⚠️ Sinov rejimi: maʼlumotlarni asl (qogʻoz) blank bilan solishtiring. Farq boʻlsa, asl blank toʻgʻri hisoblanadi. Bu tibbiy hujjat emas.\n\nSavollar boʻlsa: {phone}',
+    ru: 'Hayot Plus — результаты анализов\nБланк №{n}{d}\n\n⚠️ Тестовый режим: сверяйте данные с оригинальным (бумажным) бланком. При расхождении верным считается оригинал. Это не медицинский документ.\n\nЕсли есть вопросы: {phone}',
   },
   date: { uz: ', sana: {d}', ru: ', дата: {d}' },
   pending: {

@@ -154,8 +154,20 @@ export const T = {
   saved: { uz: 'Saqlandi', ru: 'Сохранено' },
   sex: { uz: 'Jinsi', ru: 'Пол' },
   footer: {
-    uz: 'Grafik maʼlumot uchun. Xulosani shifokor chiqaradi.',
-    ru: 'График — для информации. Заключение делает врач.',
+    uz: 'Sinov rejimi: maʼlumotlar avtomatik koʻchiriladi va xato boʻlishi mumkin — asl (qogʻoz) blank bilan solishtiring. Bu tibbiy hujjat emas, xulosani shifokor chiqaradi.',
+    ru: 'Тестовый режим: данные переносятся автоматически и могут содержать ошибки — сверяйте с оригинальным (бумажным) бланком. Это не медицинский документ, заключение делает врач.',
+  },
+  // Egasi talabi: bosh ekranda doim koʻrinadigan ogohlantirish ("Batafsil" — toʻliq matn, botdagi /shartlar bilan bir xil)
+  betaTitle: { uz: '⚠️ Sinov rejimi', ru: '⚠️ Тестовый режим' },
+  betaShort: {
+    uz: 'Ilova ishlab chiqilmoqda. Raqamlarda nomuvofiqlik boʻlishi mumkin — ularni asl (qogʻoz) blank bilan solishtiring. Farq boʻlsa, asl blank toʻgʻri hisoblanadi.',
+    ru: 'Приложение в разработке. В цифрах возможны несовпадения — сверяйте их с оригинальным (бумажным) бланком. При расхождении верным считается оригинал.',
+  },
+  betaMore: { uz: 'Batafsil ›', ru: 'Подробнее ›' },
+  betaLess: { uz: 'Yopish ‹', ru: 'Свернуть ‹' },
+  betaFull: {
+    uz: 'Ushbu bot va «Mening tahlillarim» ilovasi sinov (test) rejimida, bepul va «boricha» taqdim etiladi. Maʼlumotlar laboratoriya dasturidan avtomatik koʻchiriladi, shuning uchun ularda xatolik, kamchilik, kechikish yoki nomuvofiqlik boʻlishi mumkin.\n\n• Rasmiy natija — laboratoriya bergan asl blank (qogʻoz shaklida, imzo va muhr bilan). Farq boʻlsa, asl blankdagi maʼlumot toʻgʻri hisoblanadi.\n• Raqamlar, oʻlchov birliklari va meʼyorlarni har doim asl blank bilan solishtiring.\n• Ilova, grafiklar va hisobotlar tibbiy hujjat emas, tashxis qoʻymaydi va shifokor maslahati oʻrnini bosmaydi. Davolash boʻyicha qarorlarni faqat shifokor bilan, asl blank asosida qabul qiling.\n• Nomuvofiqlik sezsangiz, bizga xabar bering: {phone}',
+    ru: 'Этот бот и приложение «Мои анализы» работают в тестовом режиме, бесплатно и «как есть». Данные переносятся из лабораторной программы автоматически, поэтому в них возможны ошибки, пропуски, задержки и несовпадения.\n\n• Официальный результат — оригинальный бланк, выданный лабораторией (на бумаге, с подписью и печатью). При расхождении верными считаются данные оригинального бланка.\n• Всегда сверяйте цифры, единицы измерения и нормы с оригинальным бланком.\n• Приложение, графики и отчёты не являются медицинским документом, не ставят диагноз и не заменяют консультацию врача. Решения о лечении принимайте только вместе с врачом, на основании оригинального бланка.\n• Если заметили несовпадение, сообщите нам: {phone}',
   },
 };
 

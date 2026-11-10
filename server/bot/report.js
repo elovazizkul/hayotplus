@@ -29,8 +29,8 @@ const L = {
   norm: { uz: 'yashil — meʼyor', ru: 'зелёное — норма' },
   target: { uz: 'punktir — shaxsiy maqsad', ru: 'пунктир — личная цель' },
   note: {
-    uz: 'Hayot Plus laboratoriyasi natijalari asosida avtomatik tuzilgan. Asl blanklar — «Mening tahlillarim» → «Kvitansiyalar». Xulosani shifokor chiqaradi.',
-    ru: 'Составлено автоматически по результатам лаборатории Hayot Plus. Оригиналы бланков — «Мои анализы» → «Квитанции». Заключение делает врач.',
+    uz: 'SINOV REJIMI. Hayot Plus laboratoriyasi natijalari asosida avtomatik tuzilgan va xato yoki nomuvofiqlik boʻlishi mumkin. Tibbiy hujjat emas. Rasmiy natija — laboratoriya bergan asl blank (imzo va muhr bilan); farq boʻlsa, asl blank toʻgʻri hisoblanadi. Xulosani shifokor chiqaradi.',
+    ru: 'ТЕСТОВЫЙ РЕЖИМ. Составлено автоматически по результатам лаборатории Hayot Plus и может содержать ошибки или несовпадения. Не является медицинским документом. Официальный результат — оригинальный бланк лаборатории (с подписью и печатью); при расхождении верным считается оригинал. Заключение делает врач.',
   },
 };
 const l = (k, lang, n) => L[k][lang === 'ru' ? 'ru' : 'uz'].replace('{n}', n);

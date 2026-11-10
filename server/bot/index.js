@@ -457,6 +457,9 @@ async function onMessage(msg) {
       { text: say('deleteNo', lang), callback_data: 'del:n' },
     ]]);
   }
+  if (/^\/(shartlar|terms)(@\w+)?$/i.test(String(msg.text || '').trim())) {
+    return tg.send(chatId, say('beta', await langOf(msg.from), siteInfo()));
+  }
   const start = String(msg.text || '').trim().match(/^\/start(?:@\w+)?\s+([A-Za-z0-9_-]{20,64})$/);
   if (!start) return tg.send(chatId, say('hello', await langOf(msg.from), siteInfo()));
 
@@ -479,7 +482,7 @@ async function onMessage(msg) {
   );
 
   if (!user.consent_at) {
-    return tg.send(chatId, say('consent', lang), [[
+    return tg.send(chatId, say('consent', lang, { beta: say('beta', lang, siteInfo()) }), [[
       { text: say('agree', lang), callback_data: `ok:${order.id}` },
       { text: say('disagree', lang), callback_data: `no:${order.id}` },
     ]]);
@@ -683,9 +686,15 @@ async function main() {
         const next = createTelegram(cfg['bot.token']);
         const me = await next.getMe();
         await next.call('deleteWebhook');
-        // Telegram'dagi "Menu" tugmasida: ma'lumotlarni o'chirish
-        await next.call('setMyCommands', { commands: [{ command: 'ochirish', description: 'Maʼlumotlarimni oʻchirish' }] }).catch(() => {});
-        await next.call('setMyCommands', { commands: [{ command: 'ochirish', description: 'Удалить мои данные' }], language_code: 'ru' }).catch(() => {});
+        // Telegram'dagi "Menu" tugmasida: foydalanish shartlari va ma'lumotlarni o'chirish
+        await next.call('setMyCommands', { commands: [
+          { command: 'shartlar', description: 'Foydalanish shartlari (sinov rejimi)' },
+          { command: 'ochirish', description: 'Maʼlumotlarimni oʻchirish' },
+        ] }).catch(() => {});
+        await next.call('setMyCommands', { commands: [
+          { command: 'shartlar', description: 'Условия использования (тестовый режим)' },
+          { command: 'ochirish', description: 'Удалить мои данные' },
+        ], language_code: 'ru' }).catch(() => {});
         // Chat pastidagi tugma: Mini App "Mening tahlillarim"
         await next.call('setChatMenuButton', {
           menu_button: { type: 'web_app', text: '📊 Tahlillarim', web_app: { url: `${siteBase()}/app` } },

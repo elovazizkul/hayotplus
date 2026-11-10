@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Icon from '../components/Icon.jsx';
 import { AVATAR_COLORS, AVATAR_IMAGES, AVATARS, avatarOf, avatarUrl, colorOf, isImageAvatar } from '../data/avatars.js';
+import { site } from '../data/site.js';
 import Chart from './Chart.jsx';
 import { analyteName, fmtDay, profileTitle, REL, tr } from './texts.js';
 
@@ -178,6 +179,7 @@ export default function MiniApp() {
   const [stack, setStack] = useState([{ name: 'home' }]); // ekranlar zanjiri: "orqaga" bitta oldingisiga qaytaradi
   const [toast, setToast] = useState('');
   const [hint, setHint] = useState(!store.get(HINT_KEY));
+  const [betaOpen, setBetaOpen] = useState(false); // "Sinov rejimi" — to'liq matn ochiqmi
   const [owner, setOwner] = useState(false); // kvitansiyada "kimniki" tanlovi ochiqmi
 
   const screen = stack[stack.length - 1];
@@ -637,6 +639,13 @@ export default function MiniApp() {
         ) : (
           <div className="relative rounded-2xl p-4 shadow-sm" style={cardStyle}><p className="text-[14px]">{t('empty')}</p></div>
         )}
+        <div className={`${card} space-y-2`} style={{ background: 'var(--hp-warn-bg)', color: 'var(--hp-warn-text)' }}>
+          <p className="text-[14px] font-semibold">{t('betaTitle')}</p>
+          <p className="whitespace-pre-line text-[13px] leading-relaxed">{betaOpen ? t('betaFull', { phone: site.phone }) : t('betaShort')}</p>
+          <button type="button" onClick={() => setBetaOpen((o) => !o)} className="text-[13px] font-semibold underline">
+            {betaOpen ? t('betaLess') : t('betaMore')}
+          </button>
+        </div>
         {hint && (
           <div className={`${card} space-y-3`} style={{ background: 'var(--hp-soft)', color: 'var(--hp-on-soft)' }}>
             <p className="text-[15px] font-semibold">{t('hintTitle')}</p>
