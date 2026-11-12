@@ -19,6 +19,14 @@ export function isKeyAnalyte(groupTitle, name) {
   return Boolean(rule && rule.names.some((re) => re.test(String(name || '').trim())));
 }
 
+// "Solishtirilmaydi" — grafik, Kuzatuv va "Shifokorga" PDF'da yo'q (015 migratsiya bilan bir xil shart).
+const NO_COMPARE_GROUP = /общий анализ крови|general blood|umumiy qon|анализ мочи|siydik|коагул|гемостаз|koagul|гепатит|hepatit|экспресс|express|группа крови|резус|qon guruhi/i;
+const NO_COMPARE_NAME = /гепатит|hepatit|hbsag|hcv|hiv|вич|сифилис|express|экспресс|резус/i;
+
+export function isNoCompare(groupTitle, name) {
+  return NO_COMPARE_GROUP.test(groupTitle || '') || NO_COMPARE_NAME.test(String(name || ''));
+}
+
 // Laboratoriya tavsiyasi (necha oyda qayta topshirish) — yangi ko'rsatkich birinchi marta tushganda.
 // Egasi misoli: glikirlangan gemoglobin (HbA1c) — har 3 oyda (014 migratsiya bilan bir xil shart).
 // Keyin admin panelda o'zgartirilsa — o'sha qiymat qoladi, bu yerda qayta yozilmaydi.

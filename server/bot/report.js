@@ -100,7 +100,7 @@ export async function buildReport({ telegramId, pid, aids, months, lang, siteBas
      JOIN bot_orders o ON o.id = r.order_id
      JOIN lab_analytes a ON a.id = r.analyte_id
      JOIN lab_analytes c ON c.id = coalesce(nullif(a.merged_into, 0), a.id)
-     WHERE o.telegram_id = $1 AND o.patient_id = $2 AND c.id = ANY($3::bigint[]) ${since}
+     WHERE o.telegram_id = $1 AND o.patient_id = $2 AND c.id = ANY($3::bigint[]) AND NOT c.no_compare ${since}
      ORDER BY day, r.id`,
     params,
   );
@@ -123,7 +123,9 @@ export async function buildReport({ telegramId, pid, aids, months, lang, siteBas
     const flag = num !== null && ((ref.low !== null && num < ref.low) || (ref.high !== null && num > ref.high));
     byAid.get(aid).points.push({ day: r.day, text: r.value_text, num, ref: r.ref_text, low: ref.low, high: ref.high, flag });
   }
-  const list = aids.map(Number).map((a) => byAid.get(a)).filter(Boolean);
+  // Raqamsiz (sifat) ko'rsatkichlar solishtirilmaydi — hisobotga kirmaydi
+  const list = aids.map(Number).map((a) => byAid.get(a)).filter((x) => x && x.points.some((pt) => pt.num !== null));
+  if (!list.length) return { profile: p, empty: true };
   return { profile: p, html: reportHtml({ p, list, targets, months, lang, siteBase }), count: list.length };
 }
 

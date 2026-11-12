@@ -91,7 +91,7 @@ router.get('/data', wrap(async (req, res) => {
   const p = await profileOf(req, req.query.pid);
   if (!p) return res.status(404).json({ error: 'not_found' });
   const { rows } = await query(
-    `SELECT c.id AS aid, c.lis_name, c.name_uz, c.name_ru, c.unit AS c_unit, c.group_title, c.remind_months, c.is_key, c.auto_watch,
+    `SELECT c.id AS aid, c.lis_name, c.name_uz, c.name_ru, c.unit AS c_unit, c.group_title, c.remind_months, c.is_key, c.auto_watch, c.no_compare,
             o.id AS order_id, o.lis_id,
             to_char(coalesce(r.measured_on, (o.created_at AT TIME ZONE 'Asia/Tashkent')::date), 'YYYY-MM-DD') AS day,
             r.value_text, r.value_num::float8 AS value_num, r.unit, r.ref_text, r.ref_low::float8 AS ref_low, r.ref_high::float8 AS ref_high
@@ -130,6 +130,7 @@ router.get('/data', wrap(async (req, res) => {
         // remindLab — laboratoriya tavsiyasi, remindOwn — bemor o'zi tanlagan muddat (bo'lsa, u ishlaydi)
         remindLab: r.remind_months || 0, remindOwn: remOwn.get(aid) || 0,
         remindMonths: remOwn.get(aid) || r.remind_months || 0, reminderOff: remOff.has(aid), target: target.get(aid) || null, isKey: r.is_key === true,
+        noCompare: r.no_compare === true, // admin belgisi; raqamsiz (sifat) ko'rsatkichlar quyida qo'shiladi
       });
     }
     // Me'yor: blankdagi oddiy oraliq yoki profil jinsi bo'yicha ("Муж < 42, Жен < 32")
@@ -140,6 +141,12 @@ router.get('/data', wrap(async (req, res) => {
     const v = visits.get(Number(r.order_id)) || { id: Number(r.order_id), number: r.lis_id, day: r.day, count: 0 };
     v.count += 1;
     visits.set(v.id, v);
+  }
+  // Solishtirilmaydigan ko'rsatkichlar (umumiy qon/siydik, gepatit va h.k. yoki natijasi hech qachon raqam bo'lmagan):
+  // grafik, Kuzatuv va "Shifokorga" PDF'da yo'q — kuzatuvdan ham chiqadi.
+  for (const a of analytes.values()) {
+    if (!a.points.some((x) => typeof x.num === 'number')) a.noCompare = true;
+    if (a.noCompare) a.favorite = false;
   }
   res.json({
     profile: p,

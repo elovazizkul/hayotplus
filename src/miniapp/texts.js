@@ -156,6 +156,12 @@ export const T = {
   female: { uz: 'Ayol', ru: 'Женщина' },
   norm: { uz: 'yashil — meʼyor', ru: 'зелёное — норма' },
   noNumbers: { uz: 'Bu koʻrsatkich raqam emas — qiymatlar pastdagi jadvalda.', ru: 'Этот показатель не числовой — значения в таблице ниже.' },
+  // Umumiy qon/siydik, koagulogramma, gepatit va boshqa sifat tahlillari — egasi qarori
+  noCompare: { uz: 'Bu koʻrsatkichlar solishtirilmaydi', ru: 'Эти показатели не сравниваются' },
+  noCompareHint: {
+    uz: 'Natijani shifokoringiz bilan blank boʻyicha muhokama qiling. Quyida — sanalar boʻyicha natijalar.',
+    ru: 'Обсудите результат с вашим врачом по бланку. Ниже — результаты по датам.',
+  },
   date: { uz: 'Sana', ru: 'Дата' },
   value: { uz: 'Natija', ru: 'Результат' },
   ref: { uz: 'Meʼyor', ru: 'Норма' },

@@ -414,9 +414,11 @@ export default function MiniApp() {
             <span className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{a.unit}</span>
             <span className="text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('times', { n: a.points.length })}</span>
           </div>
-          {numeric
-            ? <Chart points={a.points} target={a.target} normLabel={a.target ? `${t('norm')} · ${t('goalLine')}` : t('norm')} />
-            : <p className="text-[14px]">{t('noNumbers')}</p>}
+          {a.noCompare
+            ? <><p className="text-[15px] font-semibold">{t('noCompare')}</p><p className="mt-1 text-[13px]" style={{ color: 'var(--hp-muted)' }}>{t('noCompareHint')}</p></>
+            : numeric
+              ? <Chart points={a.points} target={a.target} normLabel={a.target ? `${t('norm')} · ${t('goalLine')}` : t('norm')} />
+              : <p className="text-[14px]">{t('noNumbers')}</p>}
         </div>
         {current.id !== 'none' && (
           <div className={`${card} flex items-center justify-between gap-3`} style={cardStyle}>
@@ -429,7 +431,7 @@ export default function MiniApp() {
             </button>
           </div>
         )}
-        {current.id !== 'none' && numeric && (
+        {current.id !== 'none' && numeric && !a.noCompare && (
           <GoalCard key={a.aid} a={a} t={t} onSave={async (low, high) => { await api('/target', { pid: current.id, aid: a.aid, low, high }); await loadData(pid); flash(t('saved')); }} />
         )}
         <div className={card} style={cardStyle}>
@@ -443,7 +445,7 @@ export default function MiniApp() {
             </div>
           ))}
         </div>
-        {current.id !== 'none' && (
+        {current.id !== 'none' && !a.noCompare && (
           <Button kind="soft" onClick={async () => { await api('/favorite', { pid: current.id, aid: a.aid, on: !a.favorite }); await loadData(pid); }}>
             {a.favorite ? t('removeFav') : t('addFav')}
           </Button>
@@ -471,9 +473,11 @@ export default function MiniApp() {
           <button key={a.aid} type="button" onClick={() => go({ name: 'chart', aid: a.aid })} className="flex w-full items-center justify-between gap-3 py-3 text-left" style={{ borderTop: '1px solid var(--hp-line)' }}>
             <span className="min-w-0">
               <span className="block text-[15px]">{analyteName(a, lang)}</span>
-              <span className="block text-[12px]" style={{ color: 'var(--hp-muted)' }}>
-                {prev ? t('before', { d: fmtDay(prev.day).slice(0, 5), v: prev.text }) : t('firstTime')}
-              </span>
+              {!a.noCompare && (
+                <span className="block text-[12px]" style={{ color: 'var(--hp-muted)' }}>
+                  {prev ? t('before', { d: fmtDay(prev.day).slice(0, 5), v: prev.text }) : t('firstTime')}
+                </span>
+              )}
             </span>
             <span className="shrink-0 text-[16px] font-semibold" style={{ color: valueColor(p) }}>{p.text}{arrow(p)}</span>
           </button>
@@ -531,7 +535,15 @@ export default function MiniApp() {
   if (screen.name === 'watchAdd') {
     const items = data.analytes.map((a) => ({ a, p: latest(a) }));
     return page(
-      <GroupedList t={t} items={items} render={({ a }) => (
+      <GroupedList t={t} items={items} render={({ a }) => a.noCompare ? (
+        <div key={a.aid} className="flex w-full items-center gap-3 py-3" style={{ borderTop: '1px solid var(--hp-line)', color: 'var(--hp-muted)' }}>
+          <Icon name="block" size={22} className="shrink-0 opacity-60" />
+          <span className="min-w-0">
+            <span className="block text-[15px]">{analyteName(a, lang)}</span>
+            <span className="block text-[12px]">{t('noCompare')}</span>
+          </span>
+        </div>
+      ) : (
         <button key={a.aid} type="button" className="flex w-full items-center gap-3 py-3 text-left" style={{ borderTop: '1px solid var(--hp-line)' }}
           onClick={async () => { await api('/favorite', { pid: current.id, aid: a.aid, on: !a.favorite }); await loadData(pid); }}>
           <Icon name={a.favorite ? 'check_box' : 'check_box_outline_blank'} size={22} className="shrink-0" />
@@ -987,11 +999,13 @@ function GoalCard({ a, t, onSave }) {
 
 // "Shifokorga ko'rsatish": ko'rsatkichlar va davr tanlanadi, PDF bot chatiga keladi
 function ReportForm({ data, t, lang, onSubmit }) {
-  const sorted = [...data.analytes].sort((x, y) => (y.favorite - x.favorite) || analyteName(x, lang).localeCompare(analyteName(y, lang)));
+  // Solishtirilmaydiganlar ro'yxat oxirida, tanlab bo'lmaydi
+  const sorted = [...data.analytes].sort((x, y) => (x.noCompare - y.noCompare) || (y.favorite - x.favorite) || analyteName(x, lang).localeCompare(analyteName(y, lang)));
+  const comparable = sorted.filter((a) => !a.noCompare);
   const [picked, setPicked] = useState(() => {
     // Tanlanganlar va asosiylar oldindan belgilangan
-    const pre = sorted.filter((a) => a.favorite || a.isKey).map((a) => a.aid);
-    return new Set(pre.length ? pre : sorted.slice(0, 6).map((a) => a.aid));
+    const pre = comparable.filter((a) => a.favorite || a.isKey).map((a) => a.aid);
+    return new Set(pre.length ? pre : comparable.slice(0, 6).map((a) => a.aid));
   });
   const [months, setMonths] = useState(12);
   const [err, setErr] = useState('');
@@ -1007,7 +1021,15 @@ function ReportForm({ data, t, lang, onSubmit }) {
     <main className="space-y-3 p-4">
       <div className="rounded-2xl px-4 pb-1 pt-3" style={{ background: 'var(--hp-card)' }}>
         <p className="text-[13px] font-semibold" style={{ color: 'var(--hp-muted)' }}>{t('reportPick')}</p>
-        {sorted.map((a) => (
+        {sorted.map((a) => a.noCompare ? (
+          <div key={a.aid} className="flex w-full items-center gap-3 py-3" style={{ borderTop: '1px solid var(--hp-line)', color: 'var(--hp-muted)' }}>
+            <Icon name="block" size={22} className="shrink-0 opacity-60" />
+            <span className="min-w-0">
+              <span className="block text-[15px]">{analyteName(a, lang)}</span>
+              <span className="block text-[12px]">{t('noCompare')}</span>
+            </span>
+          </div>
+        ) : (
           <button key={a.aid} type="button" onClick={() => toggle(a.aid)} className="flex w-full items-center gap-3 py-3 text-left" style={{ borderTop: '1px solid var(--hp-line)' }}>
             <Icon name={picked.has(a.aid) ? 'check_box' : 'check_box_outline_blank'} size={22} className="shrink-0" />
             <span className="text-[15px]">{a.favorite ? '★ ' : ''}{analyteName(a, lang)}</span>
